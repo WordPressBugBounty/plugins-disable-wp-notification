@@ -1,0 +1,176 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+
+ .disable-notification-wrapper {
+    width: 600px;
+    max-width: 100%;
+    margin-top: 40px;
+}
+
+.disable-notification-wrapper header {
+    background: #fff;
+    padding: 20px 20px;
+    box-shadow: 0px 0px 3px #ccc;
+    text-align: center;
+    font-size: 1.5em;
+}
+
+.disable-notification-wrapper header h1 {
+    padding: 0px;
+}
+
+.disable-notification-wrapper .event-handler {
+    background: #fff;
+    border: 0;
+    color: #32373c;
+    cursor: pointer;
+    display: flex;
+    font-weight: 400;
+    margin: 0;
+    padding: 1em 3.5em 1em 1em;
+    position: relative;
+    text-align: left;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: bold;
+}
+
+.disable-notification-wrapper .element-wrapper * {
+    box-sizing: border-box;
+}
+
+.disable-notification-wrapper .element-wrapper {
+    background: #fff;
+    border-bottom: 1px solid #ccd0d4;
+    margin-top: 10px;
+}
+
+#display-notifications h1 {display: none;}
+.disable-notification-wrapper .event-handler:after {
+    content: '';
+    border: solid #b7b7b7;
+    border-width: 0 2px 2px 0;
+    height: .5rem;
+    pointer-events: none;
+    position: absolute;
+    right: 1.5em;
+    top: 50%;
+    transform: translateY(-70%) rotate(45deg);
+    width: .5rem;
+}
+.disable-notification-wrapper .element-wrapper.show .event-handler:after {
+ transform: translateY(-30%) rotate(-135deg);
+}
+
+.disable-notification-wrapper .handled-section {
+    display: none;
+    padding: 1em 2em 1em 2em;
+    border-top: 1px solid #f5f5f5;
+}
+
+.disable-notification-wrapper .element-wrapper.show .handled-section {
+    display: block;
+}
+
+
+.disable-notification-wrapper .form-element {
+    display: flex;
+    align-content: center;
+    margin-bottom: 10px;
+}
+
+
+.disable-notification-wrapper .form-element .option {
+    align-items: center;
+    display: inherit;
+    width: 40px;
+    justify-content: start;
+}
+
+.disable-notification-wrapper .form-element .text p{
+    margin: 0px;
+    padding: 0px;
+}
+.disable-notification-wrapper .form-element .text {
+    align-items: center;
+    display: inherit;
+}
+
+.disable-notification-wrapper .description li{ position: relative;padding: 3px 25px; }
+.disable-notification-wrapper .description li:before {
+    content: '';
+    border: solid #21d004;
+    border-width: 0 2px 2px 0px;
+    height: .2rem;
+    pointer-events: none;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-70%) rotate(45deg);
+    width: .5rem;
+    padding-top: 10px;
+}
+
+.disable-notification-wrapper #display-notifications {
+    padding-bottom: 3em;
+}
+
+.disable-notification-wrapper .phone-pe-wrapper img {
+    width: 100%;
+    max-width: 200px;
+}
+
+.disable-notification-wrapper .phone-pe-wrapper {
+    text-align: center;
+    background: #22172b;
+    margin-bottom: 30px;
+    box-shadow: 0 16px 32px 0 rgba(51, 51, 51, 0.2);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.disable-notification-wrapper .phone-pe-wrapper h6 
+{
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin: 0px;
+    padding: 20px 0;
+}
+
+.disable-notification-wrapper .paypal-wrapper {
+    text-align: center;
+    background: #eeeeee;
+    margin-bottom: 30px;
+    box-shadow: 0 16px 32px 0 rgba(51, 51, 51, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.disable-notification-wrapper .paypal-wrapper h6 {
+    color: #000;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin: 20px 0 20px 0;
+}
+.disable-notification-wrapper .rating-review {
+    text-align: center;
+    background: #ffffff;
+    margin-bottom: 30px;
+    box-shadow: 0 16px 32px 0 rgba(51, 51, 51, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.disable-notification-wrapper .rating-review h6 {
+    color: #000;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin: 20px 0 0px 0;
+}
+.disable-notification-wrapper .rating-review img{
+    width: 100%;
+}
