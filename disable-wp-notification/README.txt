@@ -4,8 +4,8 @@ Plugin Name: Disable WP Notification
 Donate link: https://sourabhagrawal.com/disable-wp-notification/
 Tags: remove unwanted notification, disable dashboard notifications, disable plugin update, disable admin notices, disable theme update, , remove notices, disable warnings, disable wordpress plugin update, disable wordpress theme update, disable update nags, disable nags
 Requires at least: 6.0
-Tested up to: 6.4.2
-Stable tag: 3.2
+Tested up to: 6.7.1
+Stable tag: 3.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,9 @@ Or, you can drop me a quick email on contact@sourabhagrawal.com as well.
 3. All these plugin update notices will be removed.
 
 == Changelog ==
+= 3.3
+* Compatible up to WordPress 6.7.1
+
 = 3.2
 * Compatible up to WordPress 6.4.2
 * Minor Bug Fixes
