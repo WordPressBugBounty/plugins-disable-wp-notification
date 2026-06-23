@@ -1,75 +1,101 @@
 === Disable WP Notification ===
 Contributors: sourabh.asct
 Plugin Name: Disable WP Notification
-Donate link: https://sourabhagrawal.com/disable-wp-notification/
-Tags: remove unwanted notification, disable dashboard notifications, disable plugin update, disable admin notices, disable theme update, , remove notices, disable warnings, disable wordpress plugin update, disable wordpress theme update, disable update nags, disable nags
+Plugin URI: https://sourabhagrawal.com/disable-wp-notification
+Donate link: https://wordpress.org/support/plugin/disable-wp-notification/reviews/#new-post
+Tags: disable notifications, block notices, clean dashboard, disable plugin updates, disable theme updates, remove admin notices, admin bar bell, notification center, clean workspace, dismiss notices, update nags, stop admin warnings
 Requires at least: 6.0
-Tested up to: 6.9.1
-Stable tag: 3.4
+Tested up to: 7.0
+Stable tag: 4.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Best wordpress plugin to remove all the admin panel notifications in just one click. Including the theme and plugin update notification.
+Keep your WordPress dashboard clean, organized, and professional in just one click. Block annoying notices and collect updates into a sleek Notification Center.
 
 == Description ==
 
-Showing the notifications related to plugins and themes is not a good idea for all the user roles. Disable WP Notification helps you to disable all the spammy notifications from the entire wordpress dashboard.
+Is your WordPress admin screen cluttered with too many notices, update reminders, and plugin advertisements? 
 
-I know sometimes it is require to get the notifications, so considering this, Our experienced developers provide you the following options:
+**Disable WP Notification** is the ultimate solution to clean your workspace. It blocks annoying administrative notices from your main screen and relocates them to a quiet, professional **Notification Center (Bell Icon)**. This ensures your dashboard stays clean while you never miss important system alerts.
 
-*	Enable all notifications
-*	Disable Notifications for all users
-*	Disable Notifications for all users except admin
+It is simple, lightweight, and business-focused. Your dashboard will look clean, load faster, and feel professional.
 
-== Disable WP Notification Features ==
-*	Disable all the spammy notifications and clean the Dashboard.
-*	A panel to show all the disabled notifications.
-* 	Disable the notifications for all the users including admin.
-* 	Disable the notifications for all the users excluding admin. That means, except admin this will work only on the other users.
-*	Disable theme updates and notification.
-*	Disable plugin updates.
-*	Only Admin can manage the settings.
+### Why Choose Disable WP Notification?
 
+*   **Zero Distractions**: Clean your workspace instantly. Focus on building your website, not closing pop-up notices.
+*   **Notification Center**: Instead of deleting notices forever, the plugin collects them in an off-screen drawer. Click the bell icon in the top bar to read them whenever you want.
+*   **Simple Control Modes**:
+    *   **Show All**: Keep notices visible normally.
+    *   **Disable for All Users**: Block notices for everyone on your site.
+    *   **Disable for All Except Admins**: Hide notices for editors, authors, and other roles, but keep them visible for administrators.
+*   **Granular Update Filters**: Stop WordPress core version nags, plugin update reminders, or theme update alerts with simple toggle switches.
+*   **One-Click Clean**: Dismiss notices permanently or clear the entire notification center tray in one click.
+*   **No Configuration Hassles**: Upgrading from older versions automatically imports and updates your settings.
+
+---
 
 == Installation ==
 
-1. Go to Dashboard > Plugins > Add New > Search > Disable WP Notification
-1. Activate the plugin through the "Plugins" menu in WordPress.
-1. Go to Dashboard > Disable Notices > Select the options as you required.
-1. Recommended option "Disable Notifications for all users except admin"
+### Easy Dashboard Installation
+1. Go to your WordPress Dashboard > **Plugins** > **Add New**.
+2. Search for **Disable WP Notification**.
+3. Click **Install Now** and then **Activate**.
+4. Go to **Settings** > **Disable Notices** to choose your settings.
 
-Manual Mathod:
+### Manual Installation
+1. Download the plugin zip file from WordPress.org.
+2. Go to **Plugins** > **Add New** > **Upload Plugin**.
+3. Upload the zip file and click **Activate**.
+4. Go to **Settings** > **Disable Notices** to manage options.
 
-1. Download this plugin.
-1. Go to Dashboard > Plugins > Add New > Upload Plugin
-1. Upload the zip file.
-1. Activate the plugin through the "Plugins" menu in WordPress.
-1. Go to Dashboard > Disable Notices > Select the options as you required.
-1. Recommended option "Disable Notifications for all users except admin"
+---
 
 == Frequently Asked Questions ==
 
-= Will we not able to update the theme / plugin after using this plugin? =
+= How does the Notification Center work? =
+When a plugin or WordPress core displays a notice, our plugin intercepts it before it draws on the screen. It saves the notice safely in a temporary list. You can view them at any time by clicking the bell icon in your top navigation bar.
 
-You can. You can change the settings to "Disable Notifications for all users except admin" and now you can able to do anything as before.
+= Will I miss critical updates if I turn this on? =
+No. You can easily view all blocked updates inside the Notification Center drawer or in the **Blocked History** tab. Additionally, you can choose to keep critical warnings visible.
 
-= Is it compatible with all the theme? =
-Yes. As this plugin is only for the backend management so it does not have any impact on the theme or other plugins.
+= Can I update my plugins and themes if notifications are disabled? =
+Yes! Disabling update notifications does not block you from upgrading. You can still update all plugins and themes normally from the **Dashboard > Updates** screen.
 
-= Is their any premium version of this plugin available? =
-No. This plugin is completely free to use. 
-However, if you would like to show your support and appreciation to the developers, you have the option to buy them a coffee by sending them a monetary contribution. It's completely voluntary and not mandatory.
+= Does this plugin affect my website speed? =
+No. It is highly optimized and runs completely on the server side using fast memory caching (transients). It actually makes your pages load cleaner and faster in your browser.
 
-= Will you provide support? =
-Yes, you can put your questions in the support section, and we will try our best to reply you soon.
-Or, you can drop me a quick email on contact@sourabhagrawal.com as well.
+= What happens when I upgrade from version 3.4? =
+Your existing settings will automatically upgrade and map to the new settings format. You do not need to reconfigure anything.
+
+= Is this plugin completely free? =
+Yes, it is 100% free! If you love the plugin, please leave us a 5-star review on WordPress.org to support our work.
+
+= How do I request support? =
+You can open a support ticket directly from the **Support & Feedback** tab inside the settings page. This will take you to our official support forum on WordPress.org.
+
+---
 
 == Screenshots ==
-1. The settings page for "Disable Notices"
-2. All these notices will be disabled
-3. All these plugin update notices will be removed.
+
+1. **Dashboard Panel**: A clean dashboard overview displaying active rules, unread notifications count, and status checklist. [screenshot-1.png]
+2. **Notification Center Drawer**: The slide-out tray containing your disabled alerts with source badges, timestamps, and dismiss buttons. [screenshot-2.png]
+3. **System Reminders Settings**: Easy toggle switches to disable WordPress core, plugin, or theme update alerts. [screenshot-3.png]
+4. **Blocked Admin Notices**: An example showing how typical administrative alerts and plugin banners are automatically disabled. [screenshot-4.png]
+5. **Cleaned Update Reminders**: A clean view of your plugins list showing how update nags and update notifications are removed. [screenshot-5.png]
+
+---
 
 == Changelog ==
+
+= 4.0 =
+* Major upgrade: Added server-side output buffer notice interception (zero screen flicker).
+* Compatible up to WordPress 7.0 (Armstrong).
+* Added premium Notification Center (Bell Icon) in the WordPress Admin Bar.
+* Added right slide-out panel drawer to review and dismiss blocked notifications.
+* Added granular filters (disable by core/theme/plugin update categories).
+* Redesigned administrative settings panel with a modern responsive UI.
+* Added automatic settings migration from older version.
+
 = 3.4 =
 * Compatible up to WordPress 6.9.1
 * Security updates
@@ -90,9 +116,6 @@ Or, you can drop me a quick email on contact@sourabhagrawal.com as well.
 = 2.0.1 =
 * Compatible up to WordPress 5.6.1
 
-= 2.0.1 =
-* Compatible up to WordPress 5.5.3
-
 = 2.0 =
 * The stable version
 * Fixed conflict with default wp theme editor
@@ -110,34 +133,7 @@ Or, you can drop me a quick email on contact@sourabhagrawal.com as well.
 = 1.0 =
 * First and stable version.
 
-
 == Upgrade Notice ==
-= 3.2
-* Compatible up to WordPress 6.4.2
-* Minor Bug Fixes
 
-= 3.1
-* Compatible up to WordPress 6.2.2
-
-= 3.0
-* Compatible up to WordPress 6.0
-
-= 2.0.1
-* Compatible up to WordPress 5.6.1
-
-= 2.0.1
-* Compatible up to WordPress 5.5.3
-
-= 2.0 (June 6, 2020)=
-* The stable version
-* Fixed conflict with default wp theme editor
-
-= 1.0.3 (20 May 2020) =
-* Improve the security
-
-= 1.0 (12 May 2020) =
-* First and stable version.
-* Tested up to 5.4.1
-* Fix the bugs.
-* Update the security as per the WordPress guidlines.
-* Restrict the feature to administrator only.
+= 4.0 =
+Major release: adds Notification Center, automatic settings upgrade from version 3.4, and server-side notice capturing.

@@ -138,6 +138,11 @@ class Disable_Wp_Notification {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_filter( "plugin_action_links_$plugin", $plugin_admin,  'add_settings_link' );
+
+		// v4.0 Interception and AJAX hooks
+		$this->loader->add_action( 'admin_init', $plugin_admin, 'init_notice_capture' );
+		$this->loader->add_action( 'wp_ajax_disable_wp_notification_dismiss', $plugin_admin, 'ajax_dismiss_notice' );
+		$this->loader->add_action( 'wp_ajax_disable_wp_notification_clear_all', $plugin_admin, 'ajax_clear_all_notices' );
 	}
 
 	/**
