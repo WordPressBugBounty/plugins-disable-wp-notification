@@ -6,7 +6,7 @@ Donate link: https://wordpress.org/support/plugin/disable-wp-notification/review
 Tags: disable notifications, block notices, clean dashboard, disable plugin updates, disable theme updates, remove admin notices, admin bar bell, notification center, clean workspace, dismiss notices, update nags, stop admin warnings
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 4.0
+Stable tag: 4.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -86,6 +86,11 @@ You can open a support ticket directly from the **Support & Feedback** tab insid
 ---
 
 == Changelog ==
+
+= 4.1 =
+* Improved compatibility and notice detection for popular third-party plugins.
+* Fixed horizontal notices alignment and floating issues on the settings panel and admin screens.
+* Added conditional blocking to ensure notices are completely hidden on standard page loads while safely allowing system status updates to display when actions/settings are saved.
 
 = 4.0 =
 * Major upgrade: Added server-side output buffer notice interception (zero screen flicker).

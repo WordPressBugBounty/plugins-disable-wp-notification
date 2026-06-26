@@ -198,7 +198,7 @@ class Disable_Wp_Notification_Admin {
 	 * @param    string    $html
 	 */
 	public function process_notices( $html ) {
-		if ( empty( $html ) || ( strpos( $html, 'notice' ) === false && strpos( $html, 'update-nag' ) === false ) ) {
+		if ( empty( $html ) || ( strpos( $html, 'notice' ) === false && strpos( $html, 'update-nag' ) === false && strpos( $html, 'updated' ) === false && strpos( $html, 'e-conversion-banner' ) === false ) ) {
 			echo $html;
 			return;
 		}
@@ -210,7 +210,7 @@ class Disable_Wp_Notification_Admin {
 
 		$xpath = new DOMXPath( $dom );
 		// Query top-level notice boxes
-		$nodes = $xpath->query( "//div[contains(@class, 'notice') or contains(@class, 'update-nag') or contains(@class, 'woocommerce-message') or contains(@class, 'plugin-update') or contains(@class, 'fs-notice') or contains(@class, 'elementor-message')] | //p[contains(@class, 'notice') or contains(@class, 'update-nag')]" );
+		$nodes = $xpath->query( "//div[contains(@class, 'notice') or contains(@class, 'update-nag') or contains(@class, 'woocommerce-message') or contains(@class, 'plugin-update') or contains(@class, 'fs-notice') or contains(@class, 'elementor-message') or contains(@class, 'updated') or contains(@class, 'e-conversion-banner')] | //p[contains(@class, 'notice') or contains(@class, 'update-nag')]" );
 
 		foreach ( $nodes as $node ) {
 			$parent = $node->parentNode;
@@ -218,7 +218,7 @@ class Disable_Wp_Notification_Admin {
 			while ( $parent && $parent->nodeName !== 'html' ) {
 				if ( $parent->nodeType === XML_ELEMENT_NODE ) {
 					$class = $parent->getAttribute( 'class' );
-					if ( preg_match( '/\b(notice|update-nag|woocommerce-message|plugin-update|fs-notice|elementor-message)\b/', $class ) ) {
+					if ( preg_match( '/\b(notice|update-nag|woocommerce-message|plugin-update|fs-notice|elementor-message|updated|e-conversion-banner)\b/', $class ) ) {
 						$is_nested = true;
 						break;
 					}
@@ -276,6 +276,27 @@ class Disable_Wp_Notification_Admin {
 		if ( is_multisite() ) {
 			$network_active = get_site_option( 'active_sitewide_plugins', array() );
 			$active_plugins = array_merge( $active_plugins, array_keys( $network_active ) );
+		}
+
+		// Explicit keyword checks for popular plugins to ensure accurate detection
+		$keyword_slugs = array(
+			'optincraft'               => 'optincraft',
+			'elementor'                => 'elementor',
+			'google-sitemap-generator' => 'google-sitemap-generator',
+			'google xml sitemaps'      => 'google-sitemap-generator',
+			'sitemap-generator'        => 'google-sitemap-generator',
+		);
+
+		foreach ( $keyword_slugs as $keyword => $target_slug ) {
+			if ( stripos( $html, $keyword ) !== false ) {
+				foreach ( $active_plugins as $plugin_path ) {
+					if ( dirname( $plugin_path ) === $target_slug ) {
+						$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin_path );
+						$name = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $target_slug ) );
+						return array( 'slug' => $target_slug, 'name' => $name );
+					}
+				}
+			}
 		}
 
 		foreach ( $active_plugins as $plugin_path ) {
@@ -343,6 +364,21 @@ class Disable_Wp_Notification_Admin {
 		$dismissed_notices = get_user_meta( $current_user_id, 'dwpn_dismissed_notices', true );
 		if ( is_array( $dismissed_notices ) && in_array( $hash, $dismissed_notices ) ) {
 			return true;
+		}
+
+		// Only exclusion is when user updates the page (e.g. settings saved, post updated, etc.)
+		$is_action_request = (
+			$_SERVER['REQUEST_METHOD'] === 'POST' ||
+			isset( $_GET['settings-updated'] ) ||
+			isset( $_GET['message'] ) ||
+			( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ) ) )
+		);
+
+		if ( $is_action_request ) {
+			// Allow status updates, action-oriented success/warning/error alerts to display
+			if ( preg_match( '/\b(notice-success|updated|settings-error|notice-error|error)\b/i', $notice_html ) ) {
+				return false;
+			}
 		}
 
 		// 1. Check update rules
@@ -726,7 +762,7 @@ class Disable_Wp_Notification_Admin {
 						</defs>
 						<path d="M 13,13 L 50,13 C 71,13 87,29 87,50 C 87,71 71,87 50,87 L 13,87 L 43,50 Z" fill="currentColor" mask="url(#dwpn-logo-mask-settings)" />
 					</svg>
-					<h2><?php echo __( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.0</span></h2>
+					<span class="dwpn-brand-text"><?php echo __( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.1</span></span>
 				</div>
 				<p class="dwpn-tagline"><?php echo __( 'Keep your WordPress dashboard clean and focused. Automatically disable cluttering administrative alerts and collect them into a central, easy-to-read Notification Center.', 'disable-wp-notification' ); ?></p>
 			</div>
@@ -1109,30 +1145,88 @@ class Disable_Wp_Notification_Admin {
 			}
 
 			if ( $should_hide_globally ) {
-				?>
-				<style type="text/css">
-				body.wp-admin:not(.theme-editor-php) .notice:not(.updated):not(.new-application-password-notice),
-				body.wp-admin:not(.theme-editor-php) .update-nag,
-				body.wp-admin:not(.theme-editor-php) #adminmenu .awaiting-mod, 
-				body.wp-admin:not(.theme-editor-php) #adminmenu .update-plugins,
-				body.wp-admin:not(.theme-editor-php) #message.woocommerce-message,
-				body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
-				body.wp-admin:not(.theme-editor-php) .fs-notice.fs-type-plugin,
-				body.wp-admin:not(.theme-editor-php) .notice.elementor-message.elementor-message-dismissed
-				{ display: none !important; }
-				
-				/* Always override to display them inside the Notification Center drawer & history content */
-				body.wp-admin #dwpn-drawer .notice,
-				body.wp-admin #dwpn-drawer .update-nag,
-				body.wp-admin #dwpn-drawer #message.woocommerce-message,
-				body.wp-admin .dwpn-history-content .notice,
-				body.wp-admin .dwpn-history-content .update-nag,
-				body.wp-admin .dwpn-history-content #message.woocommerce-message
-				{
-					display: block !important;
+				$is_action_request = (
+					$_SERVER['REQUEST_METHOD'] === 'POST' ||
+					isset( $_GET['settings-updated'] ) ||
+					isset( $_GET['message'] ) ||
+					( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ) ) )
+				);
+
+				if ( ! $is_action_request ) {
+					// Hide ALL notices on standard page loads
+					?>
+					<style type="text/css">
+					body.wp-admin:not(.theme-editor-php) .notice,
+					body.wp-admin:not(.theme-editor-php) .update-nag,
+					body.wp-admin:not(.theme-editor-php) .updated,
+					body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready,
+					body.wp-admin:not(.theme-editor-php) #adminmenu .awaiting-mod, 
+					body.wp-admin:not(.theme-editor-php) #adminmenu .update-plugins,
+					body.wp-admin:not(.theme-editor-php) #message.woocommerce-message,
+					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
+					body.wp-admin:not(.theme-editor-php) .fs-notice,
+					body.wp-admin:not(.theme-editor-php) .elementor-message,
+					body.wp-admin:not(.theme-editor-php) [class*="notice"],
+					body.wp-admin:not(.theme-editor-php) [class*="message"]
+					{ display: none !important; }
+					
+					/* Always override to display them inside the Notification Center drawer & history content */
+					body.wp-admin #dwpn-drawer .notice,
+					body.wp-admin #dwpn-drawer .updated,
+					body.wp-admin #dwpn-drawer .e-conversion-banner--ready,
+					body.wp-admin #dwpn-drawer .update-nag,
+					body.wp-admin #dwpn-drawer #message.woocommerce-message,
+					body.wp-admin #dwpn-drawer [class*="notice"],
+					body.wp-admin #dwpn-drawer [class*="message"],
+					body.wp-admin .dwpn-history-content .notice,
+					body.wp-admin .dwpn-history-content .updated,
+					body.wp-admin .dwpn-history-content .e-conversion-banner--ready,
+					body.wp-admin .dwpn-history-content .update-nag,
+					body.wp-admin .dwpn-history-content #message.woocommerce-message,
+					body.wp-admin .dwpn-history-content [class*="notice"],
+					body.wp-admin .dwpn-history-content [class*="message"]
+					{
+						display: block !important;
+					}
+					</style>
+					<?php
+				} else {
+					// On action/update requests, only hide non-success/non-error system notices
+					?>
+					<style type="text/css">
+					body.wp-admin:not(.theme-editor-php) .notice:not(.notice-success):not(.updated):not(.notice-error):not(.error),
+					body.wp-admin:not(.theme-editor-php) .updated:not(.notice-success):not(.notice-error):not(.error),
+					body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready,
+					body.wp-admin:not(.theme-editor-php) .update-nag,
+					body.wp-admin:not(.theme-editor-php) #message.woocommerce-message:not(.notice-success):not(.updated):not(.notice-error):not(.error),
+					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
+					body.wp-admin:not(.theme-editor-php) .fs-notice,
+					body.wp-admin:not(.theme-editor-php) .elementor-message:not(.notice-success):not(.updated):not(.notice-error):not(.error),
+					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.notice-success):not(.updated):not(.notice-error):not(.error),
+					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.notice-success):not(.updated):not(.notice-error):not(.error)
+					{ display: none !important; }
+					
+					/* Always override to display them inside the Notification Center drawer & history content */
+					body.wp-admin #dwpn-drawer .notice,
+					body.wp-admin #dwpn-drawer .updated,
+					body.wp-admin #dwpn-drawer .e-conversion-banner--ready,
+					body.wp-admin #dwpn-drawer .update-nag,
+					body.wp-admin #dwpn-drawer #message.woocommerce-message,
+					body.wp-admin #dwpn-drawer [class*="notice"],
+					body.wp-admin #dwpn-drawer [class*="message"],
+					body.wp-admin .dwpn-history-content .notice,
+					body.wp-admin .dwpn-history-content .updated,
+					body.wp-admin .dwpn-history-content .e-conversion-banner--ready,
+					body.wp-admin .dwpn-history-content .update-nag,
+					body.wp-admin .dwpn-history-content #message.woocommerce-message,
+					body.wp-admin .dwpn-history-content [class*="notice"],
+					body.wp-admin .dwpn-history-content [class*="message"]
+					{
+						display: block !important;
+					}
+					</style>
+					<?php
 				}
-				</style>
-				<?php
 			}
 		}
 	}

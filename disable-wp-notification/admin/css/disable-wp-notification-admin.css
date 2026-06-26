@@ -1,6 +1,6 @@
 /**
  * Styling for Disable WP Notification Admin Panel & Notification Center
- * Version: 4.0
+ * Version: 4.1
  */
 
 :root {
@@ -45,7 +45,7 @@
 	color: var(--dwpn-dark-slate);
 }
 
-.dwpn-brand h2 {
+.dwpn-brand-text {
 	margin: 0;
 	font-size: 24px;
 	font-weight: 700;
@@ -910,14 +910,35 @@
 	background: var(--dwpn-primary-hover);
 }
 
+/* Force wpbody-content to block on our settings pages to prevent flex/horizontal layouts */
+.toplevel_page_disable-wp-notification #wpbody-content,
+.settings_page_disable-wp-notification #wpbody-content {
+	display: block !important;
+}
+
 /* Layout fix for notices on our specific settings page to prevent horizontal inline rows */
+.toplevel_page_disable-wp-notification .notice,
+.toplevel_page_disable-wp-notification .update-nag,
+.toplevel_page_disable-wp-notification .woocommerce-message,
+.toplevel_page_disable-wp-notification .elementor-message,
+.toplevel_page_disable-wp-notification .yoast-notice,
+.toplevel_page_disable-wp-notification .wordfence-notice,
+.toplevel_page_disable-wp-notification .jetpack-notice,
+.toplevel_page_disable-wp-notification .updated,
+.toplevel_page_disable-wp-notification .error,
+.toplevel_page_disable-wp-notification div[class*="notice"],
+.toplevel_page_disable-wp-notification div[class*="message"],
 .settings_page_disable-wp-notification .notice,
 .settings_page_disable-wp-notification .update-nag,
 .settings_page_disable-wp-notification .woocommerce-message,
 .settings_page_disable-wp-notification .elementor-message,
 .settings_page_disable-wp-notification .yoast-notice,
 .settings_page_disable-wp-notification .wordfence-notice,
-.settings_page_disable-wp-notification .jetpack-notice {
+.settings_page_disable-wp-notification .jetpack-notice,
+.settings_page_disable-wp-notification .updated,
+.settings_page_disable-wp-notification .error,
+.settings_page_disable-wp-notification div[class*="notice"],
+.settings_page_disable-wp-notification div[class*="message"] {
 	display: block !important;
 	clear: both !important;
 	float: none !important;
@@ -936,6 +957,10 @@
 #dwpn-drawer .dwpn-notice-content .yoast-notice,
 #dwpn-drawer .dwpn-notice-content .wordfence-notice,
 #dwpn-drawer .dwpn-notice-content .jetpack-notice,
+#dwpn-drawer .dwpn-notice-content .optincraft-review-notice-wrapper,
+#dwpn-drawer .dwpn-notice-content .optincraft-notice,
+#dwpn-drawer .dwpn-notice-content div[class*="notice"],
+#dwpn-drawer .dwpn-notice-content div[class*="message"],
 .dwpn-history-content .notice,
 .dwpn-history-content .dwpn-rendered-notice,
 .dwpn-history-content .update-nag,
@@ -943,7 +968,11 @@
 .dwpn-history-content .elementor-message,
 .dwpn-history-content .yoast-notice,
 .dwpn-history-content .wordfence-notice,
-.dwpn-history-content .jetpack-notice {
+.dwpn-history-content .jetpack-notice,
+.dwpn-history-content .optincraft-review-notice-wrapper,
+.dwpn-history-content .optincraft-notice,
+.dwpn-history-content div[class*="notice"],
+.dwpn-history-content div[class*="message"] {
 	background: none !important;
 	border: none !important;
 	box-shadow: none !important;
