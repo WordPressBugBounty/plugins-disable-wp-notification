@@ -3,34 +3,35 @@ Contributors: sourabh.asct
 Plugin Name: Disable WP Notification
 Plugin URI: https://sourabhagrawal.com/disable-wp-notification
 Donate link: https://wordpress.org/support/plugin/disable-wp-notification/reviews/#new-post
-Tags: disable notifications, block notices, clean dashboard, disable plugin updates, disable theme updates, remove admin notices, admin bar bell, notification center, clean workspace, dismiss notices, update nags, stop admin warnings
+Tags: disable notifications, block notices, clean dashboard, disable plugin updates, remove admin notices
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 4.1
+Stable tag: 4.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Keep your WordPress dashboard clean, organized, and professional in just one click. Block annoying notices and collect updates into a sleek Notification Center.
+Clean your WordPress dashboard. Hide annoying admin notices, theme ads, and update alerts for your clients worldwide. Light, fast, and multi-site ready
 
 == Description ==
 
-Is your WordPress admin screen cluttered with too many notices, update reminders, and plugin advertisements? 
+Is your WordPress admin screen cluttered with third-party plugin advertisements, core updates, and localized banner notices? 
 
-**Disable WP Notification** is the ultimate solution to clean your workspace. It blocks annoying administrative notices from your main screen and relocates them to a quiet, professional **Notification Center (Bell Icon)**. This ensures your dashboard stays clean while you never miss important system alerts.
+**Disable WP Notification** is the ultimate dashboard cleaner for freelance developers, global digital agencies, and local businesses. It intercepts messy administrative notices and relocates them to a quiet, professional, European/US-compliance-friendly **Notification Center (Bell Icon)**. 
 
-It is simple, lightweight, and business-focused. Your dashboard will look clean, load faster, and feel professional.
+Whether you manage an e-commerce store in the UK, a corporate site in Germany, or local business blogs in the US, keep your client dashboards 100% white-label, fast, and distraction-free globally.
 
-### Why Choose Disable WP Notification?
-
-*   **Zero Distractions**: Clean your workspace instantly. Focus on building your website, not closing pop-up notices.
-*   **Notification Center**: Instead of deleting notices forever, the plugin collects them in an off-screen drawer. Click the bell icon in the top bar to read them whenever you want.
-*   **Simple Control Modes**:
-    *   **Show All**: Keep notices visible normally.
-    *   **Disable for All Users**: Block notices for everyone on your site.
-    *   **Disable for All Except Admins**: Hide notices for editors, authors, and other roles, but keep them visible for administrators.
-*   **Granular Update Filters**: Stop WordPress core version nags, plugin update reminders, or theme update alerts with simple toggle switches.
-*   **One-Click Clean**: Dismiss notices permanently or clear the entire notification center tray in one click.
-*   **No Configuration Hassles**: Upgrading from older versions automatically imports and updates your settings.
+### Why Global Agencies & Developers Choose Us:
+* **Zero Local Distractions**: Block region-targeted plugin sales banners instantly.
+* **Smart Notification Center**: Stores hidden notices safely in a top-bar drawer without breaking site core functionalities.
+* **Role-Based Localization**: Disable notices for localized roles (Editors, Shop Managers) while keeping them active for primary Administrators.
+* **International Standards**: Works seamlessly with multi-language setups, WPML, and localized translation networks.
+* **No Configuration Hassles**: Upgrading from older versions automatically imports and updates your settings.
+* **One-Click Clean**: Dismiss notices permanently or clear the entire notification center tray in one click.
+* **Notification Center**: Instead of deleting notices forever, the plugin collects them in an off-screen drawer. Click the bell icon in the top bar to read them whenever you want.
+* **Simple Control Modes**:
+    * **Show All**: Keep notices visible normally.
+    * **Disable for All Users**: Block notices for everyone on your site.
+    * **Disable for All Except Admins**: Hide notices for editors, authors, and other roles, but keep them visible for administrators.
 
 ---
 
@@ -61,10 +62,10 @@ No. You can easily view all blocked updates inside the Notification Center drawe
 = Can I update my plugins and themes if notifications are disabled? =
 Yes! Disabling update notifications does not block you from upgrading. You can still update all plugins and themes normally from the **Dashboard > Updates** screen.
 
-= Does this plugin affect my website speed? =
-No. It is highly optimized and runs completely on the server side using fast memory caching (transients). It actually makes your pages load cleaner and faster in your browser.
+= Does this plugin affect my website performance? =
+Not at all. It is highly optimized and runs completely on the server side using fast memory caching (transients). It actually makes your pages load cleaner and faster in your browser.
 
-= What happens when I upgrade from version 3.4? =
+= What happens when I upgrade from older version =
 Your existing settings will automatically upgrade and map to the new settings format. You do not need to reconfigure anything.
 
 = Is this plugin completely free? =
@@ -86,6 +87,10 @@ You can open a support ticket directly from the **Support & Feedback** tab insid
 ---
 
 == Changelog ==
+
+= 4.2 =
+* Fixed critical compatibility bug that caused the WordPress media library/uploader buttons and drag-and-drop area to be hidden.
+* Optimized sliding drawer performance.
 
 = 4.1 =
 * Improved compatibility and notice detection for popular third-party plugins.

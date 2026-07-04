@@ -762,7 +762,7 @@ class Disable_Wp_Notification_Admin {
 						</defs>
 						<path d="M 13,13 L 50,13 C 71,13 87,29 87,50 C 87,71 71,87 50,87 L 13,87 L 43,50 Z" fill="currentColor" mask="url(#dwpn-logo-mask-settings)" />
 					</svg>
-					<span class="dwpn-brand-text"><?php echo __( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.1</span></span>
+					<span class="dwpn-brand-text"><?php echo __( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.2</span></span>
 				</div>
 				<p class="dwpn-tagline"><?php echo __( 'Keep your WordPress dashboard clean and focused. Automatically disable cluttering administrative alerts and collect them into a central, easy-to-read Notification Center.', 'disable-wp-notification' ); ?></p>
 			</div>
@@ -1166,8 +1166,8 @@ class Disable_Wp_Notification_Admin {
 					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
 					body.wp-admin:not(.theme-editor-php) .fs-notice,
 					body.wp-admin:not(.theme-editor-php) .elementor-message,
-					body.wp-admin:not(.theme-editor-php) [class*="notice"],
-					body.wp-admin:not(.theme-editor-php) [class*="message"]
+					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
+					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
 					{ display: none !important; }
 					
 					/* Always override to display them inside the Notification Center drawer & history content */
@@ -1202,8 +1202,8 @@ class Disable_Wp_Notification_Admin {
 					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
 					body.wp-admin:not(.theme-editor-php) .fs-notice,
 					body.wp-admin:not(.theme-editor-php) .elementor-message:not(.notice-success):not(.updated):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.notice-success):not(.updated):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.notice-success):not(.updated):not(.notice-error):not(.error)
+					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
+					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
 					{ display: none !important; }
 					
 					/* Always override to display them inside the Notification Center drawer & history content */
