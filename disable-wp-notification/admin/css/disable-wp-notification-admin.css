@@ -1,6 +1,6 @@
 /**
  * Styling for Disable WP Notification Admin Panel & Notification Center
- * Version: 4.2
+ * Version: 4.3
  */
 
 :root {
@@ -21,6 +21,7 @@
 	--dwpn-slate-400: #94a3b8;
 	--dwpn-slate-100: #f1f5f9;
 	--dwpn-slate-50: #f8fafc;
+	--dwpn-border: #e2e8f0;
 
 	--dwpn-card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 	--dwpn-drawer-shadow: -5px 0 25px -5px rgba(0, 0, 0, 0.15), -2px 0 10px -6px rgba(0, 0, 0, 0.1);
@@ -438,36 +439,154 @@
 	padding-right: 8px;
 }
 
+.dwpn-card-header-with-actions {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 15px;
+	margin-bottom: 20px;
+}
+
+.dwpn-card-header-with-actions h3 {
+	margin: 0 0 4px 0;
+}
+
+.dwpn-btn-clear-all-history {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	color: var(--dwpn-danger) !important;
+	border-color: #fecdd3 !important;
+	background: #fff !important;
+	font-weight: 600 !important;
+	font-size: 12px !important;
+	padding: 4px 12px !important;
+	height: auto !important;
+	line-height: 24px !important;
+	transition: var(--dwpn-transition) !important;
+	cursor: pointer;
+}
+
+.dwpn-btn-clear-all-history:hover {
+	background: var(--dwpn-danger-light) !important;
+	border-color: var(--dwpn-danger) !important;
+	color: var(--dwpn-danger) !important;
+}
+
 .dwpn-history-item {
-	background: var(--dwpn-slate-50);
+	background: #fff;
 	border: 1px solid var(--dwpn-slate-100);
 	border-radius: 8px;
 	padding: 16px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .dwpn-history-meta {
 	display: flex;
+	align-items: center;
+	justify-content: space-between;
 	flex-wrap: wrap;
 	gap: 12px;
 	font-size: 12px;
 	color: var(--dwpn-slate-600);
-	margin-bottom: 10px;
+	margin-bottom: 12px;
 	border-bottom: 1px solid var(--dwpn-slate-100);
-	padding-bottom: 8px;
+	padding-bottom: 10px;
+}
+
+.dwpn-history-meta-left {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.dwpn-history-meta-right {
+	display: flex;
+	align-items: center;
+}
+
+.dwpn-history-meta strong {
+	color: var(--dwpn-dark-slate);
+	font-weight: 600;
 }
 
 .dwpn-history-url {
 	color: var(--dwpn-primary);
 	font-family: monospace;
+	font-size: 11px;
+}
+
+.dwpn-btn-history-dismiss {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	background: #fff !important;
+	border: 1px solid var(--dwpn-slate-200) !important;
+	color: var(--dwpn-slate-600) !important;
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	padding: 3px 8px !important;
+	border-radius: 4px !important;
+	cursor: pointer;
+	line-height: 1.4 !important;
+	transition: var(--dwpn-transition) !important;
+}
+
+.dwpn-btn-history-dismiss:hover {
+	background: var(--dwpn-danger-light) !important;
+	border-color: #fecdd3 !important;
+	color: var(--dwpn-danger) !important;
 }
 
 .dwpn-history-content {
-	background: #fff;
+	background: var(--dwpn-slate-50);
 	border: 1px solid var(--dwpn-slate-100);
-	padding: 12px;
-	border-radius: 4px;
-	max-height: 120px;
+	padding: 14px 16px;
+	border-radius: 6px;
+	max-height: 200px;
 	overflow-y: auto;
+	font-size: 13px;
+	line-height: 1.5;
+	color: #334155 !important;
+}
+
+.dwpn-history-content *,
+.dwpn-notice-content * {
+	box-sizing: border-box;
+}
+
+.dwpn-history-content p,
+.dwpn-notice-content p {
+	margin: 0 0 8px 0;
+	color: inherit;
+}
+
+.dwpn-history-content p:last-child,
+.dwpn-notice-content p:last-child {
+	margin-bottom: 0;
+}
+
+.dwpn-history-content a,
+.dwpn-notice-content a {
+	color: var(--dwpn-primary);
+	text-decoration: underline;
+}
+
+.dwpn-history-content .notice-dismiss,
+.dwpn-history-content .screen-reader-text,
+.dwpn-history-content .discard_button,
+.dwpn-notice-content .notice-dismiss,
+.dwpn-notice-content .screen-reader-text,
+.dwpn-notice-content .discard_button {
+	display: none !important;
+}
+
+.dwpn-history-content .button,
+.dwpn-notice-content .button {
+	margin-top: 6px;
+	margin-right: 6px;
 }
 
 /* Buttons */

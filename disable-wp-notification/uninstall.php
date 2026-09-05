@@ -23,3 +23,16 @@
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
+
+// Delete options
+delete_option( 'disable_notifications' );
+delete_site_option( 'disable_notifications' );
+
+// Delete user meta across all users
+delete_metadata( 'user', 0, 'dwpn_dismissed_notices', '', true );
+
+// Clear transients for users
+global $wpdb;
+if ( isset( $wpdb->options ) ) {
+	$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_dwpn_blocked_%' OR option_name LIKE '_transient_timeout_dwpn_blocked_%'" );
+}

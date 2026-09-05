@@ -81,6 +81,9 @@
 			// Update drawer header indicator count
 			$('.dwpn-count-indicator').text(newCount);
 
+			// Update dashboard inbox count if present
+			$('.dwpn-stat-card:has(.dwpn-stat-title:contains("Inbox")) .dwpn-stat-val').text(newCount);
+
 			// If count is 0, show empty state inside drawer
 			if (newCount === 0) {
 				$('#dwpn-clear-all').fadeOut();
@@ -93,19 +96,19 @@
 			}
 		}
 
-		// Dismiss single notice
+		// Dismiss single notice (works for both Drawer and History list)
 		$(document).on('click', '.dwpn-action-dismiss', function(e) {
 			e.preventDefault();
 			
 			var $btn = $(this);
 			var hash = $btn.data('hash');
-			var $item = $btn.closest('.dwpn-notice-item');
-			var nonce = $('#dwpn-drawer').data('nonce');
+			var nonce = (typeof dwpn_ajax !== 'undefined' && dwpn_ajax.nonce) ? dwpn_ajax.nonce : $('#dwpn-drawer').data('nonce');
+			var origHtml = $btn.html();
 
 			$btn.prop('disabled', true).text('Dismissing...');
 
 			$.ajax({
-				url: dwpn_ajax.ajax_url,
+				url: (typeof dwpn_ajax !== 'undefined' && dwpn_ajax.ajax_url) ? dwpn_ajax.ajax_url : ajaxurl,
 				type: 'POST',
 				data: {
 					action: 'disable_wp_notification_dismiss',
@@ -114,26 +117,41 @@
 				},
 				success: function(response) {
 					if (response.success) {
-						$item.css('transform', 'translateX(100px)').css('opacity', 0);
+						var $drawerItem = $('.dwpn-notice-item[data-hash="' + hash + '"]');
+						var $historyItem = $('.dwpn-history-item[data-hash="' + hash + '"]');
+
+						if ($drawerItem.length) {
+							$drawerItem.css('transform', 'translateX(100px)').css('opacity', 0);
+							setTimeout(function() { $drawerItem.remove(); }, 300);
+						}
+						if ($historyItem.length) {
+							$historyItem.slideUp(300, function() { 
+								$historyItem.remove();
+								if ($('.dwpn-history-item').length === 0) {
+									$('.dwpn-history-list').replaceWith('<div class="dwpn-empty-state"><p>No blocked notices currently cached.</p></div>');
+									$('#dwpn-clear-all-history').fadeOut();
+								}
+							});
+						}
+
 						setTimeout(function() {
-							$item.remove();
-							var newCount = $('.dwpn-notice-item').length;
-							updateBadgeCounts(newCount);
-						}, 300);
+							var remaining = Math.max($('.dwpn-notice-item').length, $('.dwpn-history-item').length);
+							updateBadgeCounts(remaining);
+						}, 350);
 					} else {
-						alert('Error: ' + (response.data.message || 'Could not dismiss notice.'));
-						$btn.prop('disabled', false).text('Dismiss');
+						alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Could not dismiss notice.'));
+						$btn.prop('disabled', false).html(origHtml);
 					}
 				},
 				error: function() {
 					alert('Connection error. Could not dismiss notice.');
-					$btn.prop('disabled', false).text('Dismiss');
+					$btn.prop('disabled', false).html(origHtml);
 				}
 			});
 		});
 
-		// Clear all notices
-		$(document).on('click', '#dwpn-clear-all', function(e) {
+		// Clear all notices (works from Drawer and History page)
+		$(document).on('click', '#dwpn-clear-all, #dwpn-clear-all-history', function(e) {
 			e.preventDefault();
 
 			if (!confirm('Are you sure you want to dismiss all active notices permanently?')) {
@@ -141,12 +159,13 @@
 			}
 
 			var $btn = $(this);
-			var nonce = $('#dwpn-drawer').data('nonce');
+			var nonce = (typeof dwpn_ajax !== 'undefined' && dwpn_ajax.nonce) ? dwpn_ajax.nonce : $('#dwpn-drawer').data('nonce');
+			var origHtml = $btn.html();
 
 			$btn.prop('disabled', true).text('Clearing...');
 
 			$.ajax({
-				url: dwpn_ajax.ajax_url,
+				url: (typeof dwpn_ajax !== 'undefined' && dwpn_ajax.ajax_url) ? dwpn_ajax.ajax_url : ajaxurl,
 				type: 'POST',
 				data: {
 					action: 'disable_wp_notification_clear_all',
@@ -155,18 +174,21 @@
 				success: function(response) {
 					if (response.success) {
 						$('.dwpn-notice-item').css('transform', 'translateX(100px)').css('opacity', 0);
+						$('.dwpn-history-item').slideUp(300);
 						setTimeout(function() {
-							$('.dwpn-notice-item').remove();
+							$('.dwpn-notice-item, .dwpn-history-item').remove();
+							$('.dwpn-history-list').replaceWith('<div class="dwpn-empty-state"><p>No blocked notices currently cached.</p></div>');
+							$('#dwpn-clear-all-history').fadeOut();
 							updateBadgeCounts(0);
 						}, 300);
 					} else {
-						alert('Error: ' + (response.data.message || 'Could not clear notices.'));
-						$btn.prop('disabled', false).text('Clear All');
+						alert('Error: ' + (response.data && response.data.message ? response.data.message : 'Could not clear notices.'));
+						$btn.prop('disabled', false).html(origHtml);
 					}
 				},
 				error: function() {
 					alert('Connection error. Could not clear notices.');
-					$btn.prop('disabled', false).text('Clear All');
+					$btn.prop('disabled', false).html(origHtml);
 				}
 			});
 		});

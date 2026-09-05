@@ -8,7 +8,9 @@
  * Plugin Name:       Disable WP Notification
  * Plugin URI:        https://sourabhagrawal.com/disable-wp-notification
  * Description:       Best wordpress plugin to remove all the admin panel notifications in just one click. Including the theme and plugin update notification.
- * Version:           4.2
+ * Version:           4.3
+ * Requires at least: 6.0
+ * Requires PHP:      7.4
  * Author:            Sourabh Agrawal
  * Author URI:        https://sourabhagrawal.com/
  * License:           GPL-2.0+
@@ -25,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Currently plugin version.
  */
-define( 'DISABLE_WP_NOTIFICATION_VERSION', '4.2' );
+define( 'DISABLE_WP_NOTIFICATION_VERSION', '4.3' );
 define( 'DISABLE_WP_NOTIFICATION', plugin_basename( __FILE__ ) );
 
 /**

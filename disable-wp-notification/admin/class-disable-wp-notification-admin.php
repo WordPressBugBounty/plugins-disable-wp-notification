@@ -56,31 +56,27 @@ class Disable_Wp_Notification_Admin {
 	 * @since    1.0.0
 	 */
 	public function admin_menu() {
-		if ( function_exists( 'wp_get_current_user' ) ) {
-			$user = wp_get_current_user();
-			$CurentUserRoles = (array) $user->roles;
-			if ( in_array( 'administrator', $CurentUserRoles ) ) {
-				$icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' .
-					'<defs>' .
-					'<mask id="dwpn-logo-mask-menu">' .
-					'<rect width="100" height="100" fill="white" />' .
-					'<line x1="30" y1="13" x2="75" y2="87" stroke="black" stroke-width="12" stroke-linecap="square" />' .
-					'</mask>' .
-					'</defs>' .
-					'<path d="M 13,13 L 50,13 C 71,13 87,29 87,50 C 87,71 71,87 50,87 L 13,87 L 43,50 Z" fill="currentColor" mask="url(#dwpn-logo-mask-menu)" />' .
-					'</svg>';
-				$icon_data = 'data:image/svg+xml;base64,' . base64_encode( $icon_svg );
+		if ( current_user_can( 'manage_options' ) ) {
+			$icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' .
+				'<defs>' .
+				'<mask id="dwpn-logo-mask-menu">' .
+				'<rect width="100" height="100" fill="white" />' .
+				'<line x1="30" y1="13" x2="75" y2="87" stroke="black" stroke-width="12" stroke-linecap="square" />' .
+				'</mask>' .
+				'</defs>' .
+				'<path d="M 13,13 L 50,13 C 71,13 87,29 87,50 C 87,71 71,87 50,87 L 13,87 L 43,50 Z" fill="currentColor" mask="url(#dwpn-logo-mask-menu)" />' .
+				'</svg>';
+			$icon_data = 'data:image/svg+xml;base64,' . base64_encode( $icon_svg );
 
-				add_menu_page( 
-					__( 'Disable Notifications', 'disable-wp-notification' ), 
-					__( 'Disable Notices', 'disable-wp-notification' ), 
-					'manage_options', 
-					'disable-wp-notification', 
-					array( $this, 'disable_notification' ), 
-					$icon_data, 
-					99  
-				);
-			}
+			add_menu_page( 
+				__( 'Disable Notifications', 'disable-wp-notification' ), 
+				__( 'Disable Notices', 'disable-wp-notification' ), 
+				'manage_options', 
+				'disable-wp-notification', 
+				array( $this, 'disable_notification' ), 
+				$icon_data, 
+				99  
+			);
 		}
 	}
 
@@ -272,11 +268,12 @@ class Disable_Wp_Notification_Admin {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		$active_plugins = get_option( 'active_plugins', array() );
+		$active_plugins = (array) get_option( 'active_plugins', array() );
 		if ( is_multisite() ) {
-			$network_active = get_site_option( 'active_sitewide_plugins', array() );
+			$network_active = (array) get_site_option( 'active_sitewide_plugins', array() );
 			$active_plugins = array_merge( $active_plugins, array_keys( $network_active ) );
 		}
+		$active_plugins = array_unique( $active_plugins );
 
 		// Explicit keyword checks for popular plugins to ensure accurate detection
 		$keyword_slugs = array(
@@ -291,9 +288,12 @@ class Disable_Wp_Notification_Admin {
 			if ( stripos( $html, $keyword ) !== false ) {
 				foreach ( $active_plugins as $plugin_path ) {
 					if ( dirname( $plugin_path ) === $target_slug ) {
-						$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin_path );
-						$name = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $target_slug ) );
-						return array( 'slug' => $target_slug, 'name' => $name );
+						$full_path = WP_PLUGIN_DIR . '/' . $plugin_path;
+						if ( file_exists( $full_path ) ) {
+							$plugin_data = get_plugin_data( $full_path, false, false );
+							$name = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $target_slug ) );
+							return array( 'slug' => $target_slug, 'name' => $name );
+						}
 					}
 				}
 			}
@@ -306,9 +306,12 @@ class Disable_Wp_Notification_Admin {
 			}
 
 			if ( stripos( $html, $slug ) !== false ) {
-				$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin_path );
-				$name = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $slug ) );
-				return array( 'slug' => $slug, 'name' => $name );
+				$full_path = WP_PLUGIN_DIR . '/' . $plugin_path;
+				if ( file_exists( $full_path ) ) {
+					$plugin_data = get_plugin_data( $full_path, false, false );
+					$name = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $slug ) );
+					return array( 'slug' => $slug, 'name' => $name );
+				}
 			}
 		}
 
@@ -362,16 +365,16 @@ class Disable_Wp_Notification_Admin {
 		$hash = md5( trim( strip_tags( $notice_html ) ) );
 		$current_user_id = get_current_user_id();
 		$dismissed_notices = get_user_meta( $current_user_id, 'dwpn_dismissed_notices', true );
-		if ( is_array( $dismissed_notices ) && in_array( $hash, $dismissed_notices ) ) {
+		if ( is_array( $dismissed_notices ) && in_array( $hash, $dismissed_notices, true ) ) {
 			return true;
 		}
 
 		// Only exclusion is when user updates the page (e.g. settings saved, post updated, etc.)
 		$is_action_request = (
-			$_SERVER['REQUEST_METHOD'] === 'POST' ||
+			( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] ) ||
 			isset( $_GET['settings-updated'] ) ||
 			isset( $_GET['message'] ) ||
-			( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ) ) )
+			( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ), true ) )
 		);
 
 		if ( $is_action_request ) {
@@ -406,30 +409,30 @@ class Disable_Wp_Notification_Admin {
 		// 2. Check plugin muting
 		if ( ! empty( $source['slug'] ) && 'other' !== $source['slug'] && 'wp-core' !== $source['slug'] ) {
 			$muted_plugins = isset( $options['muted_plugins'] ) ? $options['muted_plugins'] : array();
-			if ( in_array( $source['slug'], $muted_plugins ) ) {
+			if ( in_array( $source['slug'], $muted_plugins, true ) ) {
 				return true;
 			}
 		}
 
 		// 3. Check level rules
 		$blocked_types = isset( $options['blocked_types'] ) ? $options['blocked_types'] : array();
-		if ( in_array( $type, $blocked_types ) ) {
+		if ( in_array( $type, $blocked_types, true ) ) {
 			return true;
 		}
 
 		// 4. Check global fallback settings
 		$user_role_setting = isset( $options['user_role'] ) ? $options['user_role'] : '';
+		$should_block = false;
 		if ( 'all' === $user_role_setting ) {
-			return true;
+			$should_block = true;
 		}
 		if ( 'without-admin' === $user_role_setting ) {
-			if ( current_user_can( 'manage_options' ) ) {
-				return false;
+			if ( ! current_user_can( 'manage_options' ) ) {
+				$should_block = true;
 			}
-			return true;
 		}
 
-		return false;
+		return apply_filters( 'dwpn_should_block_notice', $should_block, $notice_html, $source, $type, $is_update );
 	}
 
 	/**
@@ -445,11 +448,11 @@ class Disable_Wp_Notification_Admin {
 		$this->new_blocked_notices[$hash] = array(
 			'id'          => $hash,
 			'html'        => $html,
-			'source_slug' => $source['slug'],
-			'source_name' => $source['name'],
-			'type'        => $type,
+			'source_slug' => isset( $source['slug'] ) ? sanitize_text_field( $source['slug'] ) : 'other',
+			'source_name' => isset( $source['name'] ) ? sanitize_text_field( $source['name'] ) : 'Other / System',
+			'type'        => sanitize_text_field( $type ),
 			'time'        => time(),
-			'url'         => $_SERVER['REQUEST_URI']
+			'url'         => isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : ''
 		);
 	}
 
@@ -490,12 +493,12 @@ class Disable_Wp_Notification_Admin {
 		check_ajax_referer( 'dwpn_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized user.', 'disable-wp-notification' ) ) );
 		}
 
-		$hash = isset( $_POST['hash'] ) ? sanitize_text_field( $_POST['hash'] ) : '';
+		$hash = isset( $_POST['hash'] ) ? sanitize_key( $_POST['hash'] ) : '';
 		if ( empty( $hash ) ) {
-			wp_send_json_error( array( 'message' => 'Invalid hash ID' ) );
+			wp_send_json_error( array( 'message' => esc_html__( 'Invalid notice ID.', 'disable-wp-notification' ) ) );
 		}
 
 		$current_user_id = get_current_user_id();
@@ -504,7 +507,7 @@ class Disable_Wp_Notification_Admin {
 			$dismissed_notices = array();
 		}
 
-		if ( ! in_array( $hash, $dismissed_notices ) ) {
+		if ( ! in_array( $hash, $dismissed_notices, true ) ) {
 			$dismissed_notices[] = $hash;
 			update_user_meta( $current_user_id, 'dwpn_dismissed_notices', $dismissed_notices );
 		}
@@ -516,7 +519,7 @@ class Disable_Wp_Notification_Admin {
 			set_transient( $transient_key, $active_notices, 24 * HOUR_IN_SECONDS );
 		}
 
-		wp_send_json_success( array( 'message' => 'Dismissed' ) );
+		wp_send_json_success( array( 'message' => esc_html__( 'Notice dismissed.', 'disable-wp-notification' ) ) );
 	}
 
 	/**
@@ -528,7 +531,7 @@ class Disable_Wp_Notification_Admin {
 		check_ajax_referer( 'dwpn_ajax_nonce', 'nonce' );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+			wp_send_json_error( array( 'message' => esc_html__( 'Unauthorized user.', 'disable-wp-notification' ) ) );
 		}
 
 		$current_user_id = get_current_user_id();
@@ -541,7 +544,7 @@ class Disable_Wp_Notification_Admin {
 				$dismissed_notices = array();
 			}
 			foreach ( array_keys( $active_notices ) as $hash ) {
-				if ( ! in_array( $hash, $dismissed_notices ) ) {
+				if ( ! in_array( $hash, $dismissed_notices, true ) ) {
 					$dismissed_notices[] = $hash;
 				}
 			}
@@ -549,7 +552,7 @@ class Disable_Wp_Notification_Admin {
 		}
 
 		delete_transient( $transient_key );
-		wp_send_json_success( array( 'message' => 'Cleared all' ) );
+		wp_send_json_success( array( 'message' => esc_html__( 'All notices cleared.', 'disable-wp-notification' ) ) );
 	}
 
 	/**
@@ -558,6 +561,10 @@ class Disable_Wp_Notification_Admin {
 	 * @since    4.0
 	 */
 	public function add_admin_bar_bell( $wp_admin_bar ) {
+		if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		$current_user_id = get_current_user_id();
 		$transient_key = 'dwpn_blocked_' . $current_user_id;
 		$blocked_notices = get_transient( $transient_key );
@@ -566,7 +573,7 @@ class Disable_Wp_Notification_Admin {
 		$badge = '';
 		$class = 'dwpn-bell-trigger';
 		if ( $count > 0 ) {
-			$badge = '<span class="dwpn-bell-badge">' . $count . '</span>';
+			$badge = '<span class="dwpn-bell-badge">' . (int) $count . '</span>';
 			$class .= ' has-notifications';
 		}
 
@@ -595,9 +602,16 @@ class Disable_Wp_Notification_Admin {
 		if ( ! is_array( $blocked_notices ) ) {
 			$blocked_notices = array();
 		}
+		if ( ! empty( $this->new_blocked_notices ) ) {
+			foreach ( $this->new_blocked_notices as $hash => $notice ) {
+				$blocked_notices[ $hash ] = $notice;
+			}
+		}
 
 		uasort( $blocked_notices, function( $a, $b ) {
-			return $b['time'] - $a['time'];
+			$time_a = isset( $a['time'] ) && is_numeric( $a['time'] ) ? (int) $a['time'] : 0;
+			$time_b = isset( $b['time'] ) && is_numeric( $b['time'] ) ? (int) $b['time'] : 0;
+			return $time_b <=> $time_a;
 		} );
 
 		$nonce = wp_create_nonce( 'dwpn_ajax_nonce' );
@@ -606,12 +620,12 @@ class Disable_Wp_Notification_Admin {
 		<div id="dwpn-drawer" class="dwpn-drawer" data-nonce="<?php echo esc_attr( $nonce ); ?>">
 			<div class="dwpn-drawer-header">
 				<h3>
-					<?php echo __( 'Notification Center', 'disable-wp-notification' ); ?>
+					<?php esc_html_e( 'Notification Center', 'disable-wp-notification' ); ?>
 					<span class="dwpn-count-indicator"><?php echo count( $blocked_notices ); ?></span>
 				</h3>
 				<div class="dwpn-drawer-actions">
 					<?php if ( ! empty( $blocked_notices ) ) : ?>
-						<button id="dwpn-clear-all" class="dwpn-btn-clear"><?php echo __( 'Clear All', 'disable-wp-notification' ); ?></button>
+						<button id="dwpn-clear-all" class="dwpn-btn-clear"><?php esc_html_e( 'Clear All', 'disable-wp-notification' ); ?></button>
 					<?php endif; ?>
 					<button id="dwpn-drawer-close" class="dwpn-btn-close">&times;</button>
 				</div>
@@ -621,33 +635,33 @@ class Disable_Wp_Notification_Admin {
 				<?php if ( empty( $blocked_notices ) ) : ?>
 					<div class="dwpn-no-notifications">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="dwpn-empty-icon"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>
-						<p><?php echo __( 'All clear! No blocked notifications.', 'disable-wp-notification' ); ?></p>
+						<p><?php esc_html_e( 'All clear! No blocked notifications.', 'disable-wp-notification' ); ?></p>
 					</div>
 				<?php else : ?>
 					<div class="dwpn-notice-list">
 						<?php foreach ( $blocked_notices as $hash => $notice ) : 
-							$time_diff = human_time_diff( $notice['time'], time() ) . ' ' . __( 'ago', 'disable-wp-notification' );
-							$source_name = esc_html( $notice['source_name'] );
-							$type_class = 'dwpn-type-' . esc_attr( $notice['type'] );
+							$notice_time = isset( $notice['time'] ) && is_numeric( $notice['time'] ) ? (int) $notice['time'] : time();
+							/* translators: %s: Human-readable time difference */
+							$time_diff = sprintf( esc_html__( '%s ago', 'disable-wp-notification' ), human_time_diff( $notice_time, time() ) );
+							$source_name = isset( $notice['source_name'] ) ? esc_html( $notice['source_name'] ) : esc_html__( 'System', 'disable-wp-notification' );
+							$notice_type = isset( $notice['type'] ) ? esc_attr( $notice['type'] ) : 'info';
+							$type_class = 'dwpn-type-' . $notice_type;
 							?>
 							<div class="dwpn-notice-item <?php echo $type_class; ?>" data-hash="<?php echo esc_attr( $hash ); ?>">
 								<div class="dwpn-notice-meta">
 									<span class="dwpn-notice-source"><?php echo $source_name; ?></span>
-									<span class="dwpn-notice-time"><?php echo $time_diff; ?></span>
+									<span class="dwpn-notice-time"><?php echo esc_html( $time_diff ); ?></span>
 								</div>
 								<div class="dwpn-notice-content">
 									<?php 
-									$clean_html = str_replace(
-										array( 'class="notice ', 'class=\'notice ', 'class="notice"', 'class=\'notice\'' ),
-										array( 'class="dwpn-rendered-notice ', 'class=\'dwpn-rendered-notice ', 'class="dwpn-rendered-notice"', 'class=\'dwpn-rendered-notice\'' ),
-										$notice['html']
-									);
+									$notice_html_content = isset( $notice['html'] ) ? $notice['html'] : '';
+									$clean_html = preg_replace( '/\b(notice|updated|error|update-nag)\b/', 'dwpn-rendered-notice', $notice_html_content );
 									echo wp_kses_post( $clean_html ); 
 									?>
 								</div>
 								<div class="dwpn-notice-footer">
 									<button class="dwpn-action-dismiss" data-hash="<?php echo esc_attr( $hash ); ?>">
-										<?php echo __( 'Dismiss', 'disable-wp-notification' ); ?>
+										<?php esc_html_e( 'Dismiss', 'disable-wp-notification' ); ?>
 									</button>
 								</div>
 							</div>
@@ -656,8 +670,8 @@ class Disable_Wp_Notification_Admin {
 				<?php endif; ?>
 			</div>
 			<div class="dwpn-drawer-footer">
-				<a href="<?php echo admin_url( 'options-general.php?page=disable-wp-notification' ); ?>" class="dwpn-btn-settings">
-					<?php echo __( 'Go to Settings', 'disable-wp-notification' ); ?>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=disable-wp-notification' ) ); ?>" class="dwpn-btn-settings">
+					<?php esc_html_e( 'Go to Settings', 'disable-wp-notification' ); ?>
 				</a>
 			</div>
 		</div>
@@ -670,6 +684,12 @@ class Disable_Wp_Notification_Admin {
 	 * @since    3.2
 	 */
 	public function disable_notification() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'disable-wp-notification' ) );
+		}
+
+		$settings_message = '';
+
 		// Set class property
 		if ( isset( $_POST['disable_notifications'] ) ) {
 			check_admin_referer( 'dwpn_save_settings_nonce', 'dwpn_nonce' );
@@ -698,16 +718,17 @@ class Disable_Wp_Notification_Admin {
 					$savedOptions['muted_plugins'][] = sanitize_text_field( $slug );
 				}
 			}
+			$savedOptions = apply_filters( 'dwpn_pre_save_settings', $savedOptions, $post_data );
 			
 			update_option( 'disable_notifications', $savedOptions );
-			echo '<div class="notice notice-success is-dismissible"><p>' . __( 'Settings saved successfully.', 'disable-wp-notification' ) . '</p></div>';
+			$settings_message = '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved successfully.', 'disable-wp-notification' ) . '</p></div>';
 		}
 
 		if ( isset( $_POST['dwpn_reset_dismissed'] ) ) {
-			check_admin_referer( 'dwpn_reset_dismissed_nonce', 'dwpn_reset_nonce' );
+			check_admin_referer( 'dwpn_save_settings_nonce', 'dwpn_nonce' );
 			$current_user_id = get_current_user_id();
 			delete_user_meta( $current_user_id, 'dwpn_dismissed_notices' );
-			echo '<div class="notice notice-success is-dismissible"><p>' . __( 'Cleared alerts history has been restored successfully. All alerts will show again when triggered.', 'disable-wp-notification' ) . '</p></div>';
+			$settings_message = '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Cleared alerts history has been restored successfully. All alerts will show again when triggered.', 'disable-wp-notification' ) . '</p></div>';
 		}
 		
 		$options = get_option( 'disable_notifications', array() );
@@ -721,11 +742,12 @@ class Disable_Wp_Notification_Admin {
 		$muted_plugins = isset( $options['muted_plugins'] ) ? $options['muted_plugins'] : array();
 
 		// Fetch active plugins for granular muting list
-		$active_plugins = get_option( 'active_plugins', array() );
+		$active_plugins = (array) get_option( 'active_plugins', array() );
 		if ( is_multisite() ) {
-			$network_active = get_site_option( 'active_sitewide_plugins', array() );
+			$network_active = (array) get_site_option( 'active_sitewide_plugins', array() );
 			$active_plugins = array_merge( $active_plugins, array_keys( $network_active ) );
 		}
+		$active_plugins = array_unique( $active_plugins );
 
 		$plugin_list = array();
 		if ( ! function_exists( 'get_plugin_data' ) ) {
@@ -736,8 +758,11 @@ class Disable_Wp_Notification_Admin {
 			if ( '.' === $slug || empty( $slug ) || 'disable-wp-notification' === $slug ) {
 				continue;
 			}
-			$plugin_data = get_plugin_data( WP_PLUGIN_DIR . '/' . $plugin_path );
-			$plugin_list[$slug] = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $slug ) );
+			$full_path = WP_PLUGIN_DIR . '/' . $plugin_path;
+			if ( file_exists( $full_path ) ) {
+				$plugin_data = get_plugin_data( $full_path, false, false );
+				$plugin_list[$slug] = ! empty( $plugin_data['Name'] ) ? $plugin_data['Name'] : ucwords( str_replace( '-', ' ', $slug ) );
+			}
 		}
 		asort( $plugin_list );
 
@@ -748,9 +773,22 @@ class Disable_Wp_Notification_Admin {
 		if ( ! is_array( $blocked_history ) ) {
 			$blocked_history = array();
 		}
+		if ( ! empty( $this->new_blocked_notices ) ) {
+			foreach ( $this->new_blocked_notices as $hash => $notice ) {
+				$blocked_history[ $hash ] = $notice;
+			}
+		}
+		uasort( $blocked_history, function( $a, $b ) {
+			$time_a = isset( $a['time'] ) && is_numeric( $a['time'] ) ? (int) $a['time'] : 0;
+			$time_b = isset( $b['time'] ) && is_numeric( $b['time'] ) ? (int) $b['time'] : 0;
+			return $time_b <=> $time_a;
+		} );
 		$total_blocked_now = count( $blocked_history );
 		?>
 		<div id="dwpn-settings-page" class="wrap">
+			<?php if ( ! empty( $settings_message ) ) : ?>
+				<?php echo wp_kses_post( $settings_message ); ?>
+			<?php endif; ?>
 			<div class="dwpn-settings-header">
 				<div class="dwpn-brand">
 					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="dwpn-brand-logo">
@@ -762,9 +800,9 @@ class Disable_Wp_Notification_Admin {
 						</defs>
 						<path d="M 13,13 L 50,13 C 71,13 87,29 87,50 C 87,71 71,87 50,87 L 13,87 L 43,50 Z" fill="currentColor" mask="url(#dwpn-logo-mask-settings)" />
 					</svg>
-					<span class="dwpn-brand-text"><?php echo __( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.2</span></span>
+					<span class="dwpn-brand-text"><?php esc_html_e( 'Disable WP Notification', 'disable-wp-notification' ); ?> <span class="dwpn-version-badge">v4.3</span></span>
 				</div>
-				<p class="dwpn-tagline"><?php echo __( 'Keep your WordPress dashboard clean and focused. Automatically disable cluttering administrative alerts and collect them into a central, easy-to-read Notification Center.', 'disable-wp-notification' ); ?></p>
+				<p class="dwpn-tagline"><?php esc_html_e( 'Keep your WordPress dashboard clean and focused. Automatically disable cluttering administrative alerts and collect them into a central, easy-to-read Notification Center.', 'disable-wp-notification' ); ?></p>
 			</div>
 
 			<div class="dwpn-settings-container">
@@ -772,30 +810,25 @@ class Disable_Wp_Notification_Admin {
 					<ul class="dwpn-tabs">
 						<li class="dwpn-tab active" data-tab="tab-dashboard">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
-							<?php echo __( 'Dashboard', 'disable-wp-notification' ); ?>
+							<?php esc_html_e( 'Dashboard', 'disable-wp-notification' ); ?>
 						</li>
 						<li class="dwpn-tab" data-tab="tab-general">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-							<?php echo __( 'General Settings', 'disable-wp-notification' ); ?>
+							<?php esc_html_e( 'General Settings', 'disable-wp-notification' ); ?>
 						</li>
 						<li class="dwpn-tab" data-tab="tab-filters">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-							<?php echo __( 'Granular Filters', 'disable-wp-notification' ); ?>
+							<?php esc_html_e( 'Granular Filters', 'disable-wp-notification' ); ?>
 						</li>
-						<?php /*
-						<li class="dwpn-tab" data-tab="tab-plugins">
-							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
-							<?php echo __( 'Muted Plugins', 'disable-wp-notification' ); ?>
-						</li>
-						*/ ?>
 						<li class="dwpn-tab" data-tab="tab-history">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
-							<?php echo __( 'Blocked History', 'disable-wp-notification' ); ?>
+							<?php esc_html_e( 'Blocked History', 'disable-wp-notification' ); ?>
 						</li>
 						<li class="dwpn-tab" data-tab="tab-coffee">
 							<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="dwpn-tab-icon"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"></line><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"></line></svg>
-							<?php echo __( 'Support & Feedback', 'disable-wp-notification' ); ?>
+							<?php esc_html_e( 'Support & Feedback', 'disable-wp-notification' ); ?>
 						</li>
+						<?php do_action( 'dwpn_settings_tabs' ); ?>
 					</ul>
 				</div>
 
@@ -807,7 +840,7 @@ class Disable_Wp_Notification_Admin {
 						<div id="tab-dashboard" class="dwpn-tab-content active">
 							<div class="dwpn-dashboard-grid">
 								<div class="dwpn-stat-card">
-									<div class="dwpn-stat-title"><?php echo __( 'Active Filter Rules', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-title"><?php esc_html_e( 'Active Filter Rules', 'disable-wp-notification' ); ?></div>
 									<div class="dwpn-stat-val">
 										<?php 
 										$rules_count = 0;
@@ -817,36 +850,36 @@ class Disable_Wp_Notification_Admin {
 										if ( $block_themes ) $rules_count++;
 										$rules_count += count( $blocked_types );
 										$rules_count += count( $muted_plugins );
-										echo $rules_count;
+										echo (int) $rules_count;
 										?>
 									</div>
-									<div class="dwpn-stat-desc"><?php echo __( 'Total custom rules active to disable your dashboard alerts.', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-desc"><?php esc_html_e( 'Total custom rules active to disable your dashboard alerts.', 'disable-wp-notification' ); ?></div>
 								</div>
 								<div class="dwpn-stat-card">
-									<div class="dwpn-stat-title"><?php echo __( 'Inbox Notifications', 'disable-wp-notification' ); ?></div>
-									<div class="dwpn-stat-val"><?php echo $total_blocked_now; ?></div>
-									<div class="dwpn-stat-desc"><?php echo __( 'Unread alerts stored in your Notification Center.', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-title"><?php esc_html_e( 'Inbox Notifications', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-val"><?php echo (int) $total_blocked_now; ?></div>
+									<div class="dwpn-stat-desc"><?php esc_html_e( 'Unread alerts stored in your Notification Center.', 'disable-wp-notification' ); ?></div>
 								</div>
 								<div class="dwpn-stat-card">
-									<div class="dwpn-stat-title"><?php echo __( 'Global Status', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-title"><?php esc_html_e( 'Global Status', 'disable-wp-notification' ); ?></div>
 									<div class="dwpn-stat-val">
 										<?php if ( 'enable' === $user_role ) : ?>
-											<span class="dwpn-status-inactive"><?php echo __( 'Disabled', 'disable-wp-notification' ); ?></span>
+											<span class="dwpn-status-inactive"><?php esc_html_e( 'Disabled', 'disable-wp-notification' ); ?></span>
 										<?php else : ?>
-											<span class="dwpn-status-active"><?php echo __( 'Active', 'disable-wp-notification' ); ?></span>
+											<span class="dwpn-status-active"><?php esc_html_e( 'Active', 'disable-wp-notification' ); ?></span>
 										<?php endif; ?>
 									</div>
-									<div class="dwpn-stat-desc"><?php echo __( 'Active state of notification filtering on your dashboard.', 'disable-wp-notification' ); ?></div>
+									<div class="dwpn-stat-desc"><?php esc_html_e( 'Active state of notification filtering on your dashboard.', 'disable-wp-notification' ); ?></div>
 								</div>
 							</div>
 
 							<div class="dwpn-card mt-20">
-								<h3><?php echo __( 'Welcome to Disable WP Notification!', 'disable-wp-notification' ); ?></h3>
-								<p><?php echo __( 'This plugin automatically collects and disables administrative alerts, keeping them out of your main workspace. You can access all your disabled updates at any time by clicking the bell icon in the top navigation bar.', 'disable-wp-notification' ); ?></p>
-								<p><strong><?php echo __( 'Quick Checklist to get started:', 'disable-wp-notification' ); ?></strong></p>
+								<h3><?php esc_html_e( 'Welcome to Disable WP Notification!', 'disable-wp-notification' ); ?></h3>
+								<p><?php esc_html_e( 'This plugin automatically collects and disables administrative alerts, keeping them out of your main workspace. You can access all your disabled updates at any time by clicking the bell icon in the top navigation bar.', 'disable-wp-notification' ); ?></p>
+								<p><strong><?php esc_html_e( 'Quick Checklist to get started:', 'disable-wp-notification' ); ?></strong></p>
 								<ul class="dwpn-checklist">
-									<li><?php echo __( 'Configure visibility under <strong>General Settings</strong> to choose who should have notifications disabled.', 'disable-wp-notification' ); ?></li>
-									<li><?php echo __( 'Customize filters under <strong>Granular Filters</strong> to manage system updates (WordPress core, plugins, or themes).', 'disable-wp-notification' ); ?></li>
+									<li><?php echo wp_kses_post( __( 'Configure visibility under <strong>General Settings</strong> to choose who should have notifications disabled.', 'disable-wp-notification' ) ); ?></li>
+									<li><?php echo wp_kses_post( __( 'Customize filters under <strong>Granular Filters</strong> to manage system updates (WordPress core, plugins, or themes).', 'disable-wp-notification' ) ); ?></li>
 								</ul>
 							</div>
 						</div>
@@ -854,33 +887,33 @@ class Disable_Wp_Notification_Admin {
 						<!-- Tab: General -->
 						<div id="tab-general" class="dwpn-tab-content">
 							<div class="dwpn-card">
-								<h3><?php echo __( 'Notification Settings', 'disable-wp-notification' ); ?></h3>
-								<p class="dwpn-card-desc"><?php echo __( 'Choose who sees administrative notifications and how they are displayed.', 'disable-wp-notification' ); ?></p>
+								<h3><?php esc_html_e( 'Notification Settings', 'disable-wp-notification' ); ?></h3>
+								<p class="dwpn-card-desc"><?php esc_html_e( 'Choose who sees administrative notifications and how they are displayed.', 'disable-wp-notification' ); ?></p>
 								
 								<div class="dwpn-form-group">
-									<label class="dwpn-label"><?php echo __( 'Choose Notification Mode', 'disable-wp-notification' ); ?></label>
+									<label class="dwpn-label"><?php esc_html_e( 'Choose Notification Mode', 'disable-wp-notification' ); ?></label>
 									
 									<div class="dwpn-radio-option">
 										<input type="radio" id="role-enable" name="disable_notifications[user_role]" value="enable" <?php checked( $user_role, 'enable' ); ?>>
 										<label for="role-enable">
-											<strong><?php echo __( 'Show All Notifications', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Show all alerts normally on the screen.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Show All Notifications', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Show all alerts normally on the screen.', 'disable-wp-notification' ); ?></span>
 										</label>
 									</div>
 
 									<div class="dwpn-radio-option">
 										<input type="radio" id="role-all" name="disable_notifications[user_role]" value="all" <?php checked( $user_role, 'all' ); ?>>
 										<label for="role-all">
-											<strong><?php echo __( 'Disable Notifications for All Users', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Disable all administrative alerts and collect them into the Notification Center for everyone, including administrators.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Disable Notifications for All Users', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Disable all administrative alerts and collect them into the Notification Center for everyone, including administrators.', 'disable-wp-notification' ); ?></span>
 										</label>
 									</div>
 
 									<div class="dwpn-radio-option">
 										<input type="radio" id="role-without-admin" name="disable_notifications[user_role]" value="without-admin" <?php checked( $user_role, 'without-admin' ); ?>>
 										<label for="role-without-admin">
-											<strong><?php echo __( 'Disable for All Users Except Administrators (Recommended)', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Keep notices visible to administrators while disabling notifications for all other user roles (Editors, Authors, etc.).', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Disable for All Users Except Administrators (Recommended)', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Keep notices visible to administrators while disabling notifications for all other user roles (Editors, Authors, etc.).', 'disable-wp-notification' ); ?></span>
 										</label>
 									</div>
 								</div>
@@ -892,31 +925,31 @@ class Disable_Wp_Notification_Admin {
 										<input type="checkbox" name="disable_notifications[hide_bell]" value="1" <?php checked( $hide_bell, 1 ); ?>>
 										<span class="dwpn-toggle-slider"></span>
 										<span class="dwpn-toggle-text">
-											<strong><?php echo __( 'Hide Navigation Bar Bell Icon', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Hide the top navigation bar bell icon and drawer for a completely clean view.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Hide Navigation Bar Bell Icon', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Hide the top navigation bar bell icon and drawer for a completely clean view.', 'disable-wp-notification' ); ?></span>
 										</span>
 									</label>
 								</div>
 							</div>
 							
 							<div class="dwpn-submit-wrapper">
-								<?php submit_button( __( 'Save Settings', 'disable-wp-notification' ), 'primary', 'submit', false ); ?>
+								<?php submit_button( esc_html__( 'Save Settings', 'disable-wp-notification' ), 'primary', 'submit', false ); ?>
 							</div>
 						</div>
 
 						<!-- Tab: Filters -->
 						<div id="tab-filters" class="dwpn-tab-content">
 							<div class="dwpn-card">
-								<h3><?php echo __( 'System Reminders & Updates', 'disable-wp-notification' ); ?></h3>
-								<p class="dwpn-card-desc"><?php echo __( 'Disable core updates and plugin/theme reminders.', 'disable-wp-notification' ); ?></p>
+								<h3><?php esc_html_e( 'System Reminders & Updates', 'disable-wp-notification' ); ?></h3>
+								<p class="dwpn-card-desc"><?php esc_html_e( 'Disable core updates and plugin/theme reminders.', 'disable-wp-notification' ); ?></p>
 
 								<div class="dwpn-form-group">
 									<label class="dwpn-toggle-label">
 										<input type="checkbox" name="disable_notifications[block_core]" value="1" <?php checked( $block_core, 1 ); ?>>
 										<span class="dwpn-toggle-slider"></span>
 										<span class="dwpn-toggle-text">
-											<strong><?php echo __( 'Disable WordPress Core Update Reminders', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Keep WordPress core version update alerts disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Disable WordPress Core Update Reminders', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Keep WordPress core version update alerts disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
 										</span>
 									</label>
 								</div>
@@ -926,8 +959,8 @@ class Disable_Wp_Notification_Admin {
 										<input type="checkbox" name="disable_notifications[block_plugins]" value="1" <?php checked( $block_plugins, 1 ); ?>>
 										<span class="dwpn-toggle-slider"></span>
 										<span class="dwpn-toggle-text">
-											<strong><?php echo __( 'Disable Plugin Update Reminders', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Keep plugin update reminders disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Disable Plugin Update Reminders', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Keep plugin update reminders disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
 										</span>
 									</label>
 								</div>
@@ -937,117 +970,67 @@ class Disable_Wp_Notification_Admin {
 										<input type="checkbox" name="disable_notifications[block_themes]" value="1" <?php checked( $block_themes, 1 ); ?>>
 										<span class="dwpn-toggle-slider"></span>
 										<span class="dwpn-toggle-text">
-											<strong><?php echo __( 'Disable Theme Update Reminders', 'disable-wp-notification' ); ?></strong>
-											<span><?php echo __( 'Keep theme update alerts disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
+											<strong><?php esc_html_e( 'Disable Theme Update Reminders', 'disable-wp-notification' ); ?></strong>
+											<span><?php esc_html_e( 'Keep theme update alerts disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></span>
 										</span>
 									</label>
 								</div>
 							</div>
 
-							<?php /*
-							<div class="dwpn-card mt-20">
-								<h3><?php echo __( 'Filter by Alert Priority', 'disable-wp-notification' ); ?></h3>
-								<p class="dwpn-card-desc"><?php echo __( 'Choose which types of alerts should be disabled and collected in the Notification Center.', 'disable-wp-notification' ); ?></p>
-
-								<div class="dwpn-checkbox-grid">
-									<label class="dwpn-checkbox-card">
-										<input type="checkbox" name="disable_notifications[blocked_types][]" value="success" <?php checked( in_array( 'success', $blocked_types ) ); ?>>
-										<span class="dwpn-checkbox-label">
-											<strong><?php echo __( 'Successful Task Messages', 'disable-wp-notification' ); ?></strong>
-											<span class="dwpn-badge success"><?php echo __( 'success', 'disable-wp-notification' ); ?></span>
-										</span>
-									</label>
-
-									<label class="dwpn-checkbox-card">
-										<input type="checkbox" name="disable_notifications[blocked_types][]" value="info" <?php checked( in_array( 'info', $blocked_types ) ); ?>>
-										<span class="dwpn-checkbox-label">
-											<strong><?php echo __( 'Informational Updates', 'disable-wp-notification' ); ?></strong>
-											<span class="dwpn-badge info"><?php echo __( 'info', 'disable-wp-notification' ); ?></span>
-										</span>
-									</label>
-
-									<label class="dwpn-checkbox-card">
-										<input type="checkbox" name="disable_notifications[blocked_types][]" value="warning" <?php checked( in_array( 'warning', $blocked_types ) ); ?>>
-										<span class="dwpn-checkbox-label">
-											<strong><?php echo __( 'Important Warnings', 'disable-wp-notification' ); ?></strong>
-											<span class="dwpn-badge warning"><?php echo __( 'warning', 'disable-wp-notification' ); ?></span>
-										</span>
-									</label>
-
-									<label class="dwpn-checkbox-card">
-										<input type="checkbox" name="disable_notifications[blocked_types][]" value="error" <?php checked( in_array( 'error', $blocked_types ) ); ?>>
-										<span class="dwpn-checkbox-label">
-											<strong><?php echo __( 'Critical System Messages', 'disable-wp-notification' ); ?></strong>
-											<span class="dwpn-badge error"><?php echo __( 'critical', 'disable-wp-notification' ); ?></span>
-										</span>
-									</label>
-								</div>
-								<p class="dwpn-note"><em><?php echo __( 'Note: Disabling critical messages is not recommended, as it might delay your response to security or database warnings.', 'disable-wp-notification' ); ?></em></p>
-							</div>
-							*/ ?>
-
 							<div class="dwpn-submit-wrapper">
-								<?php submit_button( __( 'Save Settings', 'disable-wp-notification' ), 'primary', 'submit', false ); ?>
+								<?php submit_button( esc_html__( 'Save Settings', 'disable-wp-notification' ), 'primary', 'submit', false ); ?>
 							</div>
 						</div>
-
-						<!-- Tab: Plugins -->
-						<?php /*
-						<div id="tab-plugins" class="dwpn-tab-content">
-							<div class="dwpn-card">
-								<h3><?php echo __( 'Disable Notices by Specific Plugins', 'disable-wp-notification' ); ?></h3>
-								<p class="dwpn-card-desc"><?php echo __( 'Choose which active plugins should have their dashboard alerts moved to the Notification Center.', 'disable-wp-notification' ); ?></p>
-								
-								<?php if ( empty( $plugin_list ) ) : ?>
-									<p><em><?php echo __( 'No active plugins detected.', 'disable-wp-notification' ); ?></em></p>
-								<?php else : ?>
-									<div class="dwpn-plugins-grid">
-										<?php foreach ( $plugin_list as $slug => $name ) : ?>
-											<label class="dwpn-plugin-item">
-												<input type="checkbox" name="disable_notifications[muted_plugins][]" value="<?php echo esc_attr( $slug ); ?>" <?php checked( in_array( $slug, $muted_plugins ) ); ?>>
-												<span class="dwpn-plugin-name"><?php echo esc_html( $name ); ?></span>
-												<span class="dwpn-plugin-slug">(<?php echo esc_html( $slug ); ?>)</span>
-											</label>
-										<?php endforeach; ?>
-									</div>
-								<?php endif; ?>
-							</div>
-
-							<div class="dwpn-submit-wrapper">
-								<?php submit_button( __( 'Save Settings', 'disable-wp-notification' ), 'primary', 'submit', false ); ?>
-							</div>
-						</div>
-						*/ ?>
 
 						<!-- Tab: History -->
 						<div id="tab-history" class="dwpn-tab-content">
 							<div class="dwpn-card">
-								<h3><?php echo __( 'Disabled Alerts History', 'disable-wp-notification' ); ?></h3>
-								<p class="dwpn-card-desc"><?php echo __( 'Review all the alerts currently held in your Notification Center.', 'disable-wp-notification' ); ?></p>
+								<div class="dwpn-card-header-with-actions">
+									<div>
+										<h3><?php esc_html_e( 'Disabled Alerts History', 'disable-wp-notification' ); ?></h3>
+										<p class="dwpn-card-desc"><?php esc_html_e( 'Review all the alerts currently held in your Notification Center.', 'disable-wp-notification' ); ?></p>
+									</div>
+									<?php if ( ! empty( $blocked_history ) ) : ?>
+										<button type="button" id="dwpn-clear-all-history" class="dwpn-btn-clear-all-history button button-secondary">
+											<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+											<?php esc_html_e( 'Clear All Alerts', 'disable-wp-notification' ); ?>
+										</button>
+									<?php endif; ?>
+								</div>
 
 								<?php if ( empty( $blocked_history ) ) : ?>
 									<div class="dwpn-empty-state">
-										<p><?php echo __( 'No blocked notices currently cached.', 'disable-wp-notification' ); ?></p>
+										<p><?php esc_html_e( 'No blocked notices currently cached.', 'disable-wp-notification' ); ?></p>
 									</div>
 								<?php else : ?>
 									<div class="dwpn-history-list">
 										<?php foreach ( $blocked_history as $hash => $notice ) : 
-											$time_diff = human_time_diff( $notice['time'], time() ) . ' ' . __( 'ago', 'disable-wp-notification' );
+											$notice_time = isset( $notice['time'] ) && is_numeric( $notice['time'] ) ? (int) $notice['time'] : time();
+											/* translators: %s: Human-readable time difference */
+											$time_diff = sprintf( esc_html__( '%s ago', 'disable-wp-notification' ), human_time_diff( $notice_time, time() ) );
+											$source_name = isset( $notice['source_name'] ) ? esc_html( $notice['source_name'] ) : esc_html__( 'System', 'disable-wp-notification' );
+											$notice_type = isset( $notice['type'] ) ? esc_html( $notice['type'] ) : 'info';
+											$notice_url = isset( $notice['url'] ) ? esc_html( $notice['url'] ) : '';
 											?>
-											<div class="dwpn-history-item">
+											<div class="dwpn-history-item" data-hash="<?php echo esc_attr( $hash ); ?>">
 												<div class="dwpn-history-meta">
-													<strong><?php echo esc_html( $notice['source_name'] ); ?></strong>
-													<span><?php echo esc_html( $notice['type'] ); ?></span>
-													<span><?php echo $time_diff; ?></span>
-													<span class="dwpn-history-url"><?php echo esc_html( $notice['url'] ); ?></span>
+													<div class="dwpn-history-meta-left">
+														<strong><?php echo $source_name; ?></strong>
+														<span class="dwpn-badge <?php echo esc_attr( $notice_type ); ?>"><?php echo esc_html( $notice_type ); ?></span>
+														<span><?php echo esc_html( $time_diff ); ?></span>
+														<span class="dwpn-history-url"><?php echo $notice_url; ?></span>
+													</div>
+													<div class="dwpn-history-meta-right">
+														<button type="button" class="dwpn-action-dismiss dwpn-btn-history-dismiss" data-hash="<?php echo esc_attr( $hash ); ?>" title="<?php esc_attr_e( 'Dismiss and clear this alert', 'disable-wp-notification' ); ?>">
+															<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+															<?php esc_html_e( 'Dismiss Alert', 'disable-wp-notification' ); ?>
+														</button>
+													</div>
 												</div>
 												<div class="dwpn-history-content">
 													<?php 
-													$clean_html = str_replace(
-														array( 'class="notice ', 'class=\'notice ', 'class="notice"', 'class=\'notice\'' ),
-														array( 'class="dwpn-rendered-notice ', 'class=\'dwpn-rendered-notice ', 'class="dwpn-rendered-notice"', 'class=\'dwpn-rendered-notice\'' ),
-														$notice['html']
-													);
+													$notice_html_content = isset( $notice['html'] ) ? $notice['html'] : '';
+													$clean_html = preg_replace( '/\b(notice|updated|error|update-nag)\b/', 'dwpn-rendered-notice', $notice_html_content );
 													echo wp_kses_post( $clean_html ); 
 													?>
 												</div>
@@ -1058,24 +1041,25 @@ class Disable_Wp_Notification_Admin {
 							</div>
 
 							<div class="dwpn-card mt-20">
-								<h3><?php echo __( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?></h3>
+								<h3><?php esc_html_e( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?></h3>
 								<p class="dwpn-card-desc"><?php 
 									$dismissed_notices = get_user_meta( $current_user_id, 'dwpn_dismissed_notices', true );
 									if ( ! is_array( $dismissed_notices ) ) {
 										$dismissed_notices = array();
 									}
 									$total_dismissed = count( $dismissed_notices );
-									echo sprintf( __( 'You have cleared %d notifications from the history.', 'disable-wp-notification' ), $total_dismissed ); 
+									echo esc_html( sprintf( 
+										/* translators: %d: Number of notifications cleared */
+										_n( 'You have cleared %d notification from the history.', 'You have cleared %d notifications from the history.', $total_dismissed, 'disable-wp-notification' ), 
+										$total_dismissed 
+									) ); 
 								?></p>
 								<?php if ( $total_dismissed > 0 ) : ?>
-									<form method="post" action="">
-										<?php wp_nonce_field( 'dwpn_reset_dismissed_nonce', 'dwpn_reset_nonce' ); ?>
-										<button type="submit" name="dwpn_reset_dismissed" class="button button-secondary">
-											<?php echo __( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?>
-										</button>
-									</form>
+									<button type="submit" name="dwpn_reset_dismissed" value="1" class="button button-secondary">
+										<?php esc_html_e( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?>
+									</button>
 								<?php else : ?>
-									<button class="button" disabled><?php echo __( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?></button>
+									<button class="button" disabled><?php esc_html_e( 'Restore Cleared Alerts', 'disable-wp-notification' ); ?></button>
 								<?php endif; ?>
 							</div>
 						</div>
@@ -1084,27 +1068,28 @@ class Disable_Wp_Notification_Admin {
 						<div id="tab-coffee" class="dwpn-tab-content">
 							<div class="dwpn-support-grid">
 								<div class="dwpn-card dwpn-support-card">
-									<h3><?php echo __( 'Love This Plugin?', 'disable-wp-notification' ); ?></h3>
-									<p class="dwpn-card-desc"><?php echo __( 'Your feedback helps us grow! If Disable WP Notification makes your dashboard cleaner and your workflow smoother, please take a moment to leave a 5-star rating on WordPress.org.', 'disable-wp-notification' ); ?></p>
+									<h3><?php esc_html_e( 'Love This Plugin?', 'disable-wp-notification' ); ?></h3>
+									<p class="dwpn-card-desc"><?php esc_html_e( 'Your feedback helps us grow! If Disable WP Notification makes your dashboard cleaner and your workflow smoother, please take a moment to leave a 5-star rating on WordPress.org.', 'disable-wp-notification' ); ?></p>
 									<div class="dwpn-support-btn-wrapper">
 										<a href="https://wordpress.org/support/plugin/disable-wp-notification/reviews/#new-post" target="_blank" class="button button-primary button-hero dwpn-btn-review">
-											<?php echo __( 'Leave a 5-Star Review', 'disable-wp-notification' ); ?>
+											<?php esc_html_e( 'Leave a 5-Star Review', 'disable-wp-notification' ); ?>
 										</a>
 									</div>
 								</div>
 
 								<div class="dwpn-card dwpn-support-card">
-									<h3><?php echo __( 'Need Help or Have a Question?', 'disable-wp-notification' ); ?></h3>
-									<p class="dwpn-card-desc"><?php echo __( 'If you encounter any issues or have questions about how to use the plugin, please create a ticket on our official WordPress.org support forum. Our team is happy to assist you.', 'disable-wp-notification' ); ?></p>
+									<h3><?php esc_html_e( 'Need Help or Have a Question?', 'disable-wp-notification' ); ?></h3>
+									<p class="dwpn-card-desc"><?php esc_html_e( 'If you encounter any issues or have questions about how to use the plugin, please create a ticket on our official WordPress.org support forum. Our team is happy to assist you.', 'disable-wp-notification' ); ?></p>
 									<div class="dwpn-support-btn-wrapper">
 										<a href="https://wordpress.org/support/plugin/disable-wp-notification/" target="_blank" class="button button-primary button-hero dwpn-btn-support">
-											<?php echo __( 'Submit a Support Ticket', 'disable-wp-notification' ); ?>
+											<?php esc_html_e( 'Submit a Support Ticket', 'disable-wp-notification' ); ?>
 										</a>
 									</div>
 								</div>
 							</div>
 						</div>
-						</div>
+						
+						<?php do_action( 'dwpn_settings_tab_contents', $options ); ?>
 
 					</form>
 				</div>
@@ -1131,102 +1116,61 @@ class Disable_Wp_Notification_Admin {
 			return;
 		}
 
-		if ( function_exists( 'wp_get_current_user' ) ) {
-			$user = wp_get_current_user();
-			$CurentUserRoles = (array) $user->roles;
+		$is_admin_user = current_user_can( 'manage_options' );
 
-			$should_hide_globally = false;
-			if ( 'all' === $user_role_setting ) {
-				$should_hide_globally = true;
-			} elseif ( 'without-admin' === $user_role_setting && ! in_array( 'administrator', $CurentUserRoles ) ) {
-				$should_hide_globally = true;
-			} elseif ( $is_settings_page && 'enable' !== $user_role_setting ) {
-				$should_hide_globally = true;
-			}
+		$should_hide_globally = false;
+		if ( 'all' === $user_role_setting ) {
+			$should_hide_globally = true;
+		} elseif ( 'without-admin' === $user_role_setting && ! $is_admin_user ) {
+			$should_hide_globally = true;
+		} elseif ( $is_settings_page && 'enable' !== $user_role_setting ) {
+			$should_hide_globally = true;
+		}
 
-			if ( $should_hide_globally ) {
-				$is_action_request = (
-					$_SERVER['REQUEST_METHOD'] === 'POST' ||
-					isset( $_GET['settings-updated'] ) ||
-					isset( $_GET['message'] ) ||
-					( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ) ) )
-				);
+		if ( $should_hide_globally ) {
+			$is_action_request = (
+				( isset( $_SERVER['REQUEST_METHOD'] ) && 'POST' === $_SERVER['REQUEST_METHOD'] ) ||
+				isset( $_GET['settings-updated'] ) ||
+				isset( $_GET['message'] ) ||
+				( isset( $_GET['action'] ) && in_array( $_GET['action'], array( 'success', 'updated', 'edit' ), true ) )
+			);
 
-				if ( ! $is_action_request ) {
-					// Hide ALL notices on standard page loads
-					?>
-					<style type="text/css">
-					body.wp-admin:not(.theme-editor-php) .notice,
-					body.wp-admin:not(.theme-editor-php) .update-nag,
-					body.wp-admin:not(.theme-editor-php) .updated,
-					body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready,
-					body.wp-admin:not(.theme-editor-php) #adminmenu .awaiting-mod, 
-					body.wp-admin:not(.theme-editor-php) #adminmenu .update-plugins,
-					body.wp-admin:not(.theme-editor-php) #message.woocommerce-message,
-					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
-					body.wp-admin:not(.theme-editor-php) .fs-notice,
-					body.wp-admin:not(.theme-editor-php) .elementor-message,
-					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
-					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
-					{ display: none !important; }
-					
-					/* Always override to display them inside the Notification Center drawer & history content */
-					body.wp-admin #dwpn-drawer .notice,
-					body.wp-admin #dwpn-drawer .updated,
-					body.wp-admin #dwpn-drawer .e-conversion-banner--ready,
-					body.wp-admin #dwpn-drawer .update-nag,
-					body.wp-admin #dwpn-drawer #message.woocommerce-message,
-					body.wp-admin #dwpn-drawer [class*="notice"],
-					body.wp-admin #dwpn-drawer [class*="message"],
-					body.wp-admin .dwpn-history-content .notice,
-					body.wp-admin .dwpn-history-content .updated,
-					body.wp-admin .dwpn-history-content .e-conversion-banner--ready,
-					body.wp-admin .dwpn-history-content .update-nag,
-					body.wp-admin .dwpn-history-content #message.woocommerce-message,
-					body.wp-admin .dwpn-history-content [class*="notice"],
-					body.wp-admin .dwpn-history-content [class*="message"]
-					{
-						display: block !important;
-					}
-					</style>
-					<?php
-				} else {
-					// On action/update requests, only hide non-success/non-error system notices
-					?>
-					<style type="text/css">
-					body.wp-admin:not(.theme-editor-php) .notice:not(.notice-success):not(.updated):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) .updated:not(.notice-success):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready,
-					body.wp-admin:not(.theme-editor-php) .update-nag,
-					body.wp-admin:not(.theme-editor-php) #message.woocommerce-message:not(.notice-success):not(.updated):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange,
-					body.wp-admin:not(.theme-editor-php) .fs-notice,
-					body.wp-admin:not(.theme-editor-php) .elementor-message:not(.notice-success):not(.updated):not(.notice-error):not(.error),
-					body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
-					body.wp-admin:not(.theme-editor-php) [class*="message"]:not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
-					{ display: none !important; }
-					
-					/* Always override to display them inside the Notification Center drawer & history content */
-					body.wp-admin #dwpn-drawer .notice,
-					body.wp-admin #dwpn-drawer .updated,
-					body.wp-admin #dwpn-drawer .e-conversion-banner--ready,
-					body.wp-admin #dwpn-drawer .update-nag,
-					body.wp-admin #dwpn-drawer #message.woocommerce-message,
-					body.wp-admin #dwpn-drawer [class*="notice"],
-					body.wp-admin #dwpn-drawer [class*="message"],
-					body.wp-admin .dwpn-history-content .notice,
-					body.wp-admin .dwpn-history-content .updated,
-					body.wp-admin .dwpn-history-content .e-conversion-banner--ready,
-					body.wp-admin .dwpn-history-content .update-nag,
-					body.wp-admin .dwpn-history-content #message.woocommerce-message,
-					body.wp-admin .dwpn-history-content [class*="notice"],
-					body.wp-admin .dwpn-history-content [class*="message"]
-					{
-						display: block !important;
-					}
-					</style>
-					<?php
-				}
+			if ( ! $is_action_request ) {
+				// Hide ALL notices on standard page loads (preserving Drawer, History, Gutenberg snackbars, and site health)
+				?>
+				<style type="text/css">
+				body.wp-admin:not(.theme-editor-php) .notice:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.components-snackbar):not(.components-notice):not(.site-health-progress),
+				body.wp-admin:not(.theme-editor-php) .update-nag:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .updated:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.components-snackbar):not(.components-notice),
+				body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) #adminmenu .awaiting-mod, 
+				body.wp-admin:not(.theme-editor-php) #adminmenu .update-plugins,
+				body.wp-admin:not(.theme-editor-php) #message.woocommerce-message:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .fs-notice:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .elementor-message:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.components-snackbar):not(.components-notice):not(.site-health-progress):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
+				body.wp-admin:not(.theme-editor-php) [class*="message"]:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.components-snackbar):not(.components-notice):not(.site-health-progress):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
+				{ display: none !important; }
+				</style>
+				<?php
+			} else {
+				// On action/update requests, only hide non-success/non-error system notices
+				?>
+				<style type="text/css">
+				body.wp-admin:not(.theme-editor-php) .notice:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.components-snackbar):not(.components-notice):not(.site-health-progress),
+				body.wp-admin:not(.theme-editor-php) .updated:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.notice-error):not(.error):not(.components-snackbar):not(.components-notice),
+				body.wp-admin:not(.theme-editor-php) .e-conversion-banner--ready:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .update-nag:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) #message.woocommerce-message:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.updated):not(.notice-error):not(.error),
+				body.wp-admin:not(.theme-editor-php) .plugin-update.colspanchange:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .fs-notice:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *),
+				body.wp-admin:not(.theme-editor-php) .elementor-message:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.updated):not(.notice-error):not(.error),
+				body.wp-admin:not(.theme-editor-php) [class*="notice"]:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.components-snackbar):not(.components-notice):not(.site-health-progress):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message),
+				body.wp-admin:not(.theme-editor-php) [class*="message"]:not(#dwpn-drawer *):not(.dwpn-history-content *):not(.dwpn-notice-content *):not(.notice-success):not(.updated):not(.notice-error):not(.error):not(.components-snackbar):not(.components-notice):not(.site-health-progress):not(.uploader-inline-content):not(.no-upload-message):not(.has-upload-message):not(.upload-message):not(.media-message)
+				{ display: none !important; }
+				</style>
+				<?php
 			}
 		}
 	}
@@ -1252,7 +1196,7 @@ class Disable_Wp_Notification_Admin {
 	 * @return   array
 	 */
 	public function add_settings_link( $links ) {
-		$settings_link = '<a href="options-general.php?page=disable-wp-notification">' . __( 'Settings', 'disable-wp-notification' ) . '</a>';
+		$settings_link = '<a href="' . esc_url( admin_url( 'admin.php?page=disable-wp-notification' ) ) . '">' . esc_html__( 'Settings', 'disable-wp-notification' ) . '</a>';
 		array_unshift( $links, $settings_link );
 		return $links;
 	}
